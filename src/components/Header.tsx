@@ -170,7 +170,7 @@ const Header: React.FC = memo(() => {
     return (
       <header className='bg-white pt-6 border-b'>
         <div className='container mx-auto px-3 sm:px-4 py-3 sm:py-6 flex flex-col items-center max-w-5xl'>
-          <div className='text-center text-gray-500'>Yükleniyor...</div>
+          <div className='text-center text-gray-500'>Lädt...</div>
         </div>
       </header>
     );
