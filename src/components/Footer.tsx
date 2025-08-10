@@ -45,7 +45,7 @@ const Footer = () => {
             </div>
             <div>
               <div className="text-xs font-medium">💬 WhatsApp & Anrufen</div>
-              <div className="font-bold text-lg">01525 9630500</div>
+              <div className="font-bold text-lg">+49 1525 9630500</div>
             </div>
           </a>
           {copied && (
