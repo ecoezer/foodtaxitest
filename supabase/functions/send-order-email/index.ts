@@ -242,8 +242,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    console.log('🚀 Email function called with method:', req.method);
+
     // Only allow POST requests
     if (req.method !== 'POST') {
+      console.error('❌ Method not allowed:', req.method);
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
         {
@@ -255,9 +258,17 @@ Deno.serve(async (req: Request) => {
 
     // Parse request body
     const orderData: OrderData = await req.json();
+    console.log('📦 Order data received:', {
+      name: orderData.name,
+      phone: orderData.phone,
+      orderType: orderData.orderType,
+      itemCount: orderData.orderItems?.length || 0,
+      total: orderData.total
+    });
 
     // Validate required fields
     if (!orderData.name || !orderData.phone || !orderData.orderItems || orderData.orderItems.length === 0) {
+      console.error('❌ Missing required order data');
       return new Response(
         JSON.stringify({ error: 'Missing required order data' }),
         {
@@ -267,17 +278,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate email HTML
-    const emailHTML = generateEmailHTML(orderData);
-
-    // Send email using Resend
+    // Check environment variables
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const restaurantEmail = Deno.env.get('RESTAURANT_EMAIL') || 'orders@foodstaxi-gronau.de';
+    const restaurantEmail = Deno.env.get('RESTAURANT_EMAIL');
+
+    console.log('🔑 Environment check:', {
+      hasResendKey: !!resendApiKey,
+      resendKeyLength: resendApiKey?.length || 0,
+      restaurantEmail: restaurantEmail || 'not set'
+    });
 
     if (!resendApiKey) {
-      console.error('RESEND_API_KEY not configured');
+      console.error('❌ RESEND_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'Email service not configured' }),
+        JSON.stringify({ error: 'Email service not configured - missing API key' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -285,25 +299,61 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    if (!restaurantEmail) {
+      console.error('❌ RESTAURANT_EMAIL not configured');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured - missing restaurant email' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Generate email HTML
+    console.log('📧 Generating email HTML...');
+    const emailHTML = generateEmailHTML(orderData);
+
+    // Prepare email payload
+    const emailPayload = {
+      from: 'FoodsTaxi-Gronau <noreply@resend.dev>',
+      to: [restaurantEmail],
+      subject: `🍕 Neue Bestellung von ${orderData.name} - ${orderData.total.toFixed(2).replace('.', ',')} €`,
+      html: emailHTML,
+    };
+
+    console.log('📤 Sending email to Resend API...', {
+      from: emailPayload.from,
+      to: emailPayload.to,
+      subject: emailPayload.subject
+    });
+
+    // Send email using Resend
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: 'FoodsTaxi-Gronau <noreply@foodstaxi-gronau.de>',
-        to: [restaurantEmail],
-        subject: `🍕 Neue Bestellung von ${orderData.name} - ${orderData.total.toFixed(2).replace('.', ',')} €`,
-        html: emailHTML,
-      }),
+      body: JSON.stringify(emailPayload),
     });
+
+    console.log('📬 Resend API response status:', emailResponse.status);
 
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text();
-      console.error('Resend API error:', errorText);
+      console.error('❌ Resend API error:', {
+        status: emailResponse.status,
+        statusText: emailResponse.statusText,
+        error: errorText
+      });
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to send email', details: errorText }),
+        JSON.stringify({ 
+          error: 'Failed to send email', 
+          status: emailResponse.status,
+          details: errorText 
+        }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -312,7 +362,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const emailResult = await emailResponse.json();
-    console.log('Email sent successfully:', emailResult);
+    console.log('✅ Email sent successfully:', emailResult);
 
     return new Response(
       JSON.stringify({ 
@@ -327,11 +377,12 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error('Error in send-order-email function:', error);
+    console.error('💥 Error in send-order-email function:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error', 
-        message: error.message 
+        message: error.message,
+        stack: error.stack 
       }),
       {
         status: 500,
