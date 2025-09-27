@@ -270,7 +270,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
 
               {/* Show quantity and add button only for non-pizza items or when not Wunsch Pizza */}
-              {!item.isWunschPizza && (
+              {!item.isWunschPizza ? (
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex items-center gap-3">
                     <button
@@ -305,6 +305,28 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                     <span className="font-bold">
                       {getTotalPrice().toFixed(2).replace('.', ',')} €
                     </span>
+                  </button>
+                </div>
+              ) : (
+                // Next button for Wunsch Pizza size selection
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+                  >
+                    Abbrechen
+                  </button>
+
+                  <button
+                    onClick={() => setCurrentStep('specialRequest')}
+                    disabled={!selectedSize}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                      selectedSize
+                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span>Weiter</span>
                   </button>
                 </div>
               )}
