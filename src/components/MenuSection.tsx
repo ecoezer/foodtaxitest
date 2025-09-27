@@ -138,18 +138,22 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
   const handleSizeSelection = useCallback((size: PizzaSize) => {
     setSelectedSize(size);
-    if (item.isPizza || item.isWunschPizza) {
-      setCurrentStep('specialRequest');
-    } else {
-      setCurrentStep('complete');
-    }
-  }, [item.isPizza, item.isWunschPizza]);
+  }, []);
 
   const handleSpecialRequestSelection = useCallback((request: string) => {
     setSelectedSpecialRequest(request);
     setCurrentStep('complete');
   }, []);
 
+  const handleNextToSpecialRequest = useCallback(() => {
+    if (selectedSize) {
+      if (item.isPizza || item.isWunschPizza) {
+        setCurrentStep('specialRequest');
+      } else {
+        setCurrentStep('complete');
+      }
+    }
+  }, [selectedSize, item.isPizza, item.isWunschPizza]);
   const handleBackToSize = useCallback(() => {
     setCurrentStep('size');
   }, []);
