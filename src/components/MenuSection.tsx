@@ -4,6 +4,7 @@ import { MenuItem, PizzaSize } from '../types';
 import { 
   wunschPizzaIngredients, 
   pizzaExtras, 
+  pizzaSpecialRequests,
   pastaTypes, 
   sauceTypes, 
   saladSauceTypes,
@@ -37,6 +38,7 @@ interface ItemModalProps {
     selectedExtras?: string[],
     selectedPastaType?: string,
     selectedSauce?: string
+    selectedSpecialRequest?: string
   ) => void;
 }
 
@@ -48,6 +50,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [selectedPastaType, setSelectedPastaType] = useState<string>('');
   const [selectedSauce, setSelectedSauce] = useState<string>('');
+  const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
 
   const resetSelections = useCallback(() => {
     setSelectedSize(item.sizes ? item.sizes[0] : undefined);
@@ -55,6 +58,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
     setSelectedExtras([]);
     setSelectedPastaType('');
     setSelectedSauce('');
+    setSelectedSpecialRequest('Standard');
   }, [item]);
 
   React.useEffect(() => {
@@ -85,15 +89,24 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   }, []);
 
   const handleAddToOrder = useCallback(() => {
-    onAddToOrder(item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce);
+    onAddToOrder(item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
     onClose();
-  }, [item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, onAddToOrder, onClose]);
+  }, [item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest, onAddToOrder, onClose]);
 
   const getCurrentPrice = useCallback(() => {
     let price = selectedSize ? selectedSize.price : item.price;
     price += selectedExtras.length * 1.50;
+    
+    // Add special request price
+    if (selectedSpecialRequest && selectedSpecialRequest !== 'Standard') {
+      const specialRequest = pizzaSpecialRequests.find(req => req.name === selectedSpecialRequest);
+      if (specialRequest) {
+        price += specialRequest.price;
+      }
+    }
+    
     return price;
-  }, [selectedSize, selectedExtras, item.price]);
+  }, [selectedSize, selectedExtras, selectedSpecialRequest, item.price]);
 
   const canAddToOrder = useCallback(() => {
     // Check if pasta type is required and selected
@@ -168,6 +181,40 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                         <span className="font-bold text-orange-600 text-lg">
                           {size.price.toFixed(2).replace('.', ',')} €
                         </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Pizza Special Request Selection */}
+            {(item.isPizza || item.isWunschPizza) && (
+              <div className="space-y-4">
+                <h4 className="font-semibold text-gray-900 text-lg">Dein Sonderwunsch</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {pizzaSpecialRequests.map((request) => (
+                    <button
+                      key={request.name}
+                      onClick={() => setSelectedSpecialRequest(request.name)}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        selectedSpecialRequest === request.name
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium text-lg">{request.name}</span>
+                          {request.description && (
+                            <span className="text-sm text-gray-600 block">{request.description}</span>
+                          )}
+                        </div>
+                        {request.price > 0 && (
+                          <span className="font-bold text-orange-600 text-lg">
+                            +{request.price.toFixed(2).replace('.', ',')} €
+                          </span>
+                        )}
                       </div>
                     </button>
                   ))}
@@ -304,6 +351,11 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   {item.isBeerSelection ? 'Bier' : (item.id >= 568 && item.id <= 573 && item.isSpezialitaet) ? 'Dressing' : 'Soße'}: {selectedSauce}
                 </div>
               )}
+             {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+               <div className="text-sm text-orange-600">
+                 Sonderwunsch: {selectedSpecialRequest} (+{pizzaSpecialRequests.find(req => req.name === selectedSpecialRequest)?.price.toFixed(2).replace('.', ',')}€)
+               </div>
+             )}
               {selectedIngredients.length > 0 && (
                 <div className="text-sm text-green-600">
                   Zutaten: {selectedIngredients.join(', ')}

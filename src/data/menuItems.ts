@@ -1,5 +1,13 @@
 import { MenuItem, WunschPizzaIngredient, PizzaExtra, PastaType, SauceType } from '../types';
 
+// Pizza special requests (Sonderwunsch)
+export const pizzaSpecialRequests = [
+  { name: 'Standard', price: 0, description: 'Normale Pizza' },
+  { name: 'Käserand', price: 2.00, description: 'Mit Käserand (+2,00€)' },
+  { name: 'Americanstyle', price: 1.50, description: 'Amerikanischer Stil (+1,50€)' },
+  { name: 'als Calzone', price: 1.00, description: 'Als gefüllte Calzone (+1,00€)' }
+];
+
 // Helper functions to check current day for special offers
 const isRippchen = () => {
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday

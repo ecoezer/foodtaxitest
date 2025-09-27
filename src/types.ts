@@ -19,6 +19,12 @@ export interface PizzaSize {
   description?: string;
 }
 
+export interface PizzaSpecialRequest {
+  name: string;
+  price: number;
+  description?: string;
+}
+
 export interface PizzaExtra {
   name: string;
   price: number;
@@ -40,6 +46,7 @@ export interface OrderItem {
   selectedExtras?: string[];
   selectedPastaType?: string;
   selectedSauce?: string;
+  selectedSpecialRequest?: string;
 }
 
 export interface CustomerInfo {
