@@ -53,6 +53,42 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedSauce, setSelectedSauce] = useState<string>('');
   const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
 
+  // Get dynamic pricing for special requests based on pizza size
+  const getSpecialRequestPrice = useCallback((requestName: string, size?: PizzaSize) => {
+    if (requestName === 'Standard') return 0;
+    
+    const basePrices = {
+      'Käserand': { medium: 2.00, large: 2.50, family: 3.00, mega: 3.00 },
+      'Americanstyle': { medium: 1.50, large: 2.00, family: 2.50, mega: 2.50 },
+      'als Calzone': { medium: 1.00, large: 1.50, family: 2.00, mega: 2.00 }
+    };
+    
+    const sizeKey = size?.name.toLowerCase() || 'medium';
+    return basePrices[requestName]?.[sizeKey] || 0;
+  }, []);
+
+  // Get dynamic special requests with current pricing
+  const getDynamicSpecialRequests = useCallback(() => {
+    return [
+      { name: 'Standard', price: 0, description: 'Normale Pizza' },
+      { 
+        name: 'Käserand', 
+        price: getSpecialRequestPrice('Käserand', selectedSize), 
+        description: `Mit Käserand (+${getSpecialRequestPrice('Käserand', selectedSize).toFixed(2).replace('.', ',')}€)` 
+      },
+      { 
+        name: 'Americanstyle', 
+        price: getSpecialRequestPrice('Americanstyle', selectedSize), 
+        description: `Amerikanischer Stil (+${getSpecialRequestPrice('Americanstyle', selectedSize).toFixed(2).replace('.', ',')}€)` 
+      },
+      { 
+        name: 'als Calzone', 
+        price: getSpecialRequestPrice('als Calzone', selectedSize), 
+        description: `Als gefüllte Calzone (+${getSpecialRequestPrice('als Calzone', selectedSize).toFixed(2).replace('.', ',')}€)` 
+      }
+    ];
+  }, [selectedSize, getSpecialRequestPrice]);
+
   const resetSelections = useCallback(() => {
     setSelectedSize(item.sizes ? item.sizes[0] : undefined);
     setSelectedIngredients([]);
@@ -100,14 +136,11 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
     
     // Add special request price
     if (selectedSpecialRequest && selectedSpecialRequest !== 'Standard') {
-      const specialRequest = pizzaSpecialRequests.find(req => req.name === selectedSpecialRequest);
-      if (specialRequest) {
-        price += specialRequest.price;
-      }
+      price += getSpecialRequestPrice(selectedSpecialRequest, selectedSize);
     }
     
     return price;
-  }, [selectedSize, selectedExtras, selectedSpecialRequest, item.price]);
+  }, [selectedSize, selectedExtras, selectedSpecialRequest, item.price, getSpecialRequestPrice]);
 
   const canAddToOrder = useCallback(() => {
     // Check if pasta type is required and selected
@@ -194,7 +227,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900 text-lg">Dein Sonderwunsch</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {pizzaSpecialRequests.map((request) => (
+                  {getDynamicSpecialRequests().map((request) => (
                     <button
                       key={request.name}
                       onClick={() => setSelectedSpecialRequest(request.name)}
@@ -354,7 +387,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               )}
              {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
                <div className="text-sm text-orange-600">
-                 Sonderwunsch: {selectedSpecialRequest} (+{pizzaSpecialRequests.find(req => req.name === selectedSpecialRequest)?.price.toFixed(2).replace('.', ',')}€)
+                 Sonderwunsch: {selectedSpecialRequest} (+{getSpecialRequestPrice(selectedSpecialRequest, selectedSize).toFixed(2).replace('.', ',')}€)
                </div>
              )}
               {selectedIngredients.length > 0 && (
