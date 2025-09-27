@@ -138,22 +138,13 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
   const handleSizeSelection = useCallback((size: PizzaSize) => {
     setSelectedSize(size);
-  }, []);
+  }, [item.isPizza, item.isWunschPizza]);
 
   const handleSpecialRequestSelection = useCallback((request: string) => {
     setSelectedSpecialRequest(request);
     setCurrentStep('complete');
   }, []);
 
-  const handleNextToSpecialRequest = useCallback(() => {
-    if (selectedSize) {
-      if (item.isPizza || item.isWunschPizza) {
-        setCurrentStep('specialRequest');
-      } else {
-        setCurrentStep('complete');
-      }
-    }
-  }, [selectedSize, item.isPizza, item.isWunschPizza]);
   const handleBackToSize = useCallback(() => {
     setCurrentStep('size');
   }, []);
@@ -366,7 +357,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                             type="radio"
                             name="size"
                             checked={selectedSize?.name === size.name}
-                            onChange={() => handleSizeSelection(size)}
+                            onChange={() => setSelectedSize(size)}
                             className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
                           />
                           <div className="ml-3">
@@ -404,7 +395,13 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 </div>
 
                 <button
-                  onClick={() => setCurrentStep('specialRequest')}
+                  onClick={() => {
+                    if (item.isPizza || item.isWunschPizza) {
+                      setCurrentStep('specialRequest');
+                    } else {
+                      setCurrentStep('complete');
+                    }
+                  }}
                   disabled={!selectedSize}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
                     selectedSize
