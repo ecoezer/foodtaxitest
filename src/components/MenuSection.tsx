@@ -452,9 +452,19 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
                 </p>
               </div>
+              <div className="text-right">
+                <div className="flex flex-col gap-1">
+                  <span className="text-2xl font-bold text-orange-600">
+                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {selectedSize?.name} - {selectedSize?.description} × {quantity}
+                  </span>
+                </div>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
               >
                 ×
               </button>
