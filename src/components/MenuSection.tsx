@@ -53,6 +53,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedSauce, setSelectedSauce] = useState<string>('');
   const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
   const [quantity, setQuantity] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState<'size' | 'specialRequest' | 'complete'>('size');
 
   // Get dynamic pricing for special requests based on pizza size
   const getSpecialRequestPrice = useCallback((requestName: string, size?: PizzaSize) => {
@@ -102,6 +103,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   React.useEffect(() => {
     if (isOpen) {
       resetSelections();
+      setCurrentStep('size');
     }
   }, [isOpen, resetSelections]);
 
@@ -133,6 +135,24 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
     }
     onClose();
   }, [item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest, quantity, onAddToOrder, onClose]);
+
+  const handleSizeSelection = useCallback((size: PizzaSize) => {
+    setSelectedSize(size);
+    if (item.isPizza || item.isWunschPizza) {
+      setCurrentStep('specialRequest');
+    } else {
+      setCurrentStep('complete');
+    }
+  }, [item.isPizza, item.isWunschPizza]);
+
+  const handleSpecialRequestSelection = useCallback((request: string) => {
+    setSelectedSpecialRequest(request);
+    setCurrentStep('complete');
+  }, []);
+
+  const handleBackToSize = useCallback(() => {
+    setCurrentStep('size');
+  }, []);
 
   const getCurrentPrice = useCallback(() => {
     let price = selectedSize ? selectedSize.price : item.price;
@@ -179,14 +199,18 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   if (!isOpen) return null;
 
   // For simple pizzas (not Wunsch Pizza), show simplified modal
-  if (item.isPizza && !item.isWunschPizza && !item.isPasta && !item.isSpezialitaet && !item.isBeerSelection) {
+  if ((item.isPizza && !item.isWunschPizza && !item.isPasta && !item.isSpezialitaet && !item.isBeerSelection) || 
+      (item.isWunschPizza && currentStep === 'size')) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-xl max-w-md w-full">
           <div className="p-6">
             <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {item.name}
+                  {item.isWunschPizza && <span className="text-sm text-gray-500 block">Schritt 1: Größe wählen</span>}
+                </h3>
                 <p className="text-gray-600 mt-2 text-sm">
                   ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
                 </p>
@@ -228,7 +252,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                             type="radio"
                             name="size"
                             checked={selectedSize?.name === size.name}
-                            onChange={() => setSelectedSize(size)}
+                            onChange={() => handleSizeSelection(size)}
                             className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
                           />
                           <div className="ml-3">
@@ -245,43 +269,140 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 )}
               </div>
 
-              {/* Quantity and Add Button */}
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center gap-3">
+              {/* Show quantity and add button only for non-pizza items or when not Wunsch Pizza */}
+              {!item.isWunschPizza && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                    >
+                      <Minus className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                    >
+                      <Plus className="w-5 h-5 text-gray-600" />
+                    </button>
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                    onClick={handleAddToOrder}
+                    disabled={!canAddToOrder()}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                      canAddToOrder()
+                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
-                    <Minus className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-gray-600" />
+                    <span>Hinzufügen</span>
+                    <span className="font-bold">
+                      {getTotalPrice().toFixed(2).replace('.', ',')} €
+                    </span>
                   </button>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-                <button
-                  onClick={handleAddToOrder}
-                  disabled={!canAddToOrder()}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                    canAddToOrder()
-                      ? 'bg-orange-500 text-white hover:bg-orange-600'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <span>Hinzufügen</span>
-                  <span className="font-bold">
-                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+  // Special request selection step for pizzas
+  if ((item.isPizza || item.isWunschPizza) && currentStep === 'specialRequest') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full">
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {item.name}
+                  <span className="text-sm text-gray-500 block">
+                    Schritt 2: Dein Sonderwunsch
                   </span>
-                </button>
+                </h3>
+                <p className="text-gray-600 mt-2 text-sm">
+                  Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
+                </p>
               </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">Dein Sonderwunsch:</h4>
+                <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
+                  1 Pflichtfeld
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {getDynamicSpecialRequests().map((request) => (
+                  <label
+                    key={request.name}
+                    className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedSpecialRequest === request.name
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="specialRequest"
+                        checked={selectedSpecialRequest === request.name}
+                        onChange={() => handleSpecialRequestSelection(request.name)}
+                        className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                      />
+                      <div className="ml-3">
+                        <div className="font-medium text-gray-900">{request.name}</div>
+                        {request.description && (
+                          <div className="text-sm text-gray-500">{request.description}</div>
+                        )}
+                      </div>
+                    </div>
+                    {request.price > 0 && (
+                      <span className="font-bold text-gray-900">
+                        +{request.price.toFixed(2).replace('.', ',')} €
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-6 border-t mt-6">
+              <button
+                onClick={handleBackToSize}
+                className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+              >
+                Zurück
+              </button>
+
+              <button
+                onClick={() => setCurrentStep('complete')}
+                disabled={!selectedSpecialRequest}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  selectedSpecialRequest
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <span>Weiter</span>
+              </button>
             </div>
           </div>
         </div>
@@ -296,7 +417,10 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                {item.name}
+                {item.isWunschPizza && <span className="text-sm text-gray-500 block">Schritt 3: Weitere Optionen</span>}
+              </h3>
               {item.description && (
                 <p className="text-gray-600 mt-1">{item.description}</p>
               )}
@@ -311,7 +435,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
           <div className="space-y-6">
             {/* Size Selection */}
-            {item.sizes && item.sizes.length > 0 && (
+            {item.sizes && item.sizes.length > 0 && !item.isWunschPizza && (
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900 text-lg">Größe wählen *</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -342,8 +466,39 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
             )}
 
+            {/* Show selected size for Wunsch Pizza */}
+            {item.isWunschPizza && selectedSize && (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-gray-900 text-lg mb-2">Gewählte Größe:</h4>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="font-medium text-lg">{selectedSize.name}</span>
+                    {selectedSize.description && (
+                      <span className="text-sm text-gray-600 block">{selectedSize.description}</span>
+                    )}
+                  </div>
+                  <span className="font-bold text-orange-600 text-lg">
+                    {selectedSize.price.toFixed(2).replace('.', ',')} €
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Show selected special request for pizzas */}
+            {(item.isPizza || item.isWunschPizza) && selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <h4 className="font-semibold text-gray-900 text-lg mb-2">Gewählter Sonderwunsch:</h4>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-lg">{selectedSpecialRequest}</span>
+                  <span className="font-bold text-orange-600 text-lg">
+                    +{getSpecialRequestPrice(selectedSpecialRequest, selectedSize).toFixed(2).replace('.', ',')} €
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Pizza Special Request Selection */}
-            {(item.isPizza || item.isWunschPizza) && (
+            {(item.isPizza || item.isWunschPizza) && currentStep === 'complete' && false && (
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900 text-lg">Dein Sonderwunsch</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -534,6 +689,27 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               Abbrechen
             </button>
 
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                >
+                  <Minus className="w-5 h-5 text-gray-600" />
+                </button>
+                <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                >
+                  <Plus className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
             <button
               onClick={handleAddToOrder}
               disabled={!canAddToOrder()}
@@ -544,8 +720,12 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               }`}
             >
               <ShoppingCart className="w-5 h-5" />
-              In den Warenkorb
+              <span>Hinzufügen</span>
+              <span className="font-bold">
+                {getTotalPrice().toFixed(2).replace('.', ',')} €
+              </span>
             </button>
+            </div>
           </div>
         </div>
       </div>
