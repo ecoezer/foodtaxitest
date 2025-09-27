@@ -413,7 +413,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   // Original complex modal for Wunsch Pizza, Pasta, etc.
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-md w-full">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -421,8 +421,15 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 {item.name}
                 {item.isWunschPizza && <span className="text-sm text-gray-500 block">Schritt 3: Weitere Optionen</span>}
               </h3>
-              {item.description && (
-                <p className="text-gray-600 mt-1">{item.description}</p>
+              {item.isWunschPizza && selectedSize && (
+                <p className="text-gray-600 mt-2 text-sm">
+                  Größe: {selectedSize.name} {selectedSize.description && `- ${selectedSize.description}`}
+                </p>
+              )}
+              {item.isWunschPizza && selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+                <p className="text-gray-600 mt-1 text-sm">
+                  Sonderwunsch: {selectedSpecialRequest}
+                </p>
               )}
             </div>
             <button
@@ -434,168 +441,21 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
           </div>
 
           <div className="space-y-6">
-            {/* Size Selection */}
-            {item.sizes && item.sizes.length > 0 && !item.isWunschPizza && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 text-lg">Größe wählen *</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {item.sizes.map((size) => (
-                    <button
-                      key={size.name}
-                      onClick={() => setSelectedSize(size)}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        selectedSize?.name === size.name
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium text-lg">{size.name}</span>
-                          {size.description && (
-                            <span className="text-sm text-gray-600 block">{size.description}</span>
-                          )}
-                        </div>
-                        <span className="font-bold text-orange-600 text-lg">
-                          {size.price.toFixed(2).replace('.', ',')} €
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Show selected size for Wunsch Pizza */}
-            {item.isWunschPizza && selectedSize && (
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-gray-900 text-lg mb-2">Gewählte Größe:</h4>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="font-medium text-lg">{selectedSize.name}</span>
-                    {selectedSize.description && (
-                      <span className="text-sm text-gray-600 block">{selectedSize.description}</span>
-                    )}
-                  </div>
-                  <span className="font-bold text-orange-600 text-lg">
-                    {selectedSize.price.toFixed(2).replace('.', ',')} €
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Show selected special request for pizzas */}
-            {(item.isPizza || item.isWunschPizza) && selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <h4 className="font-semibold text-gray-900 text-lg mb-2">Gewählter Sonderwunsch:</h4>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-lg">{selectedSpecialRequest}</span>
-                  <span className="font-bold text-orange-600 text-lg">
-                    +{getSpecialRequestPrice(selectedSpecialRequest, selectedSize).toFixed(2).replace('.', ',')} €
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Pizza Special Request Selection */}
-            {(item.isPizza || item.isWunschPizza) && currentStep === 'complete' && false && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 text-lg">Dein Sonderwunsch</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {getDynamicSpecialRequests().map((request) => (
-                    <button
-                      key={request.name}
-                      onClick={() => setSelectedSpecialRequest(request.name)}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        selectedSpecialRequest === request.name
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium text-lg">{request.name}</span>
-                          {request.description && (
-                            <span className="text-sm text-gray-600 block">{request.description}</span>
-                          )}
-                        </div>
-                        {request.price > 0 && (
-                          <span className="font-bold text-orange-600 text-lg">
-                            +{request.price.toFixed(2).replace('.', ',')} €
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Pasta Type Selection */}
-            {item.isPasta && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 text-lg">Nudelsorte wählen *</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {pastaTypes.map((pastaType) => (
-                    <button
-                      key={pastaType.name}
-                      onClick={() => setSelectedPastaType(pastaType.name)}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        selectedPastaType === pastaType.name
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <span className="font-medium text-lg">{pastaType.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Sauce/Dressing/Beer Selection */}
-            {((item.isSpezialitaet && ![81, 82].includes(item.id)) || 
-              (item.id >= 568 && item.id <= 573 && item.isSpezialitaet) ||
-              item.isBeerSelection) && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 text-lg">
-                  {item.isBeerSelection ? 'Bier wählen *' : 
-                   (item.id >= 568 && item.id <= 573 && item.isSpezialitaet) ? 'Dressing wählen *' : 
-                   'Soße wählen *'}
-                </h4>
-                <div className="grid grid-cols-1 gap-3">
-                  {(item.isBeerSelection ? beerTypes :
-                    (item.id >= 568 && item.id <= 573 && item.isSpezialitaet) ? saladSauceTypes :
-                    sauceTypes).map((sauce) => (
-                    <button
-                      key={sauce.name}
-                      onClick={() => setSelectedSauce(sauce.name)}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        selectedSauce === sauce.name
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <span className="font-medium text-lg">{sauce.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Wunsch Pizza Ingredients */}
             {item.isWunschPizza && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 text-lg">
-                  4 Zutaten wählen * (genau 4 Zutaten oder "ohne Zutat")
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto ingredients-scroll">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-gray-900">4 Zutaten wählen:</h4>
+                  <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
+                    1 Pflichtfeld
+                  </span>
+                </div>
+                
+                <div className="space-y-3 max-h-80 overflow-y-auto">
                   {wunschPizzaIngredients.map((ingredient) => (
-                    <button
+                    <label
                       key={ingredient.name}
-                      onClick={() => handleIngredientToggle(ingredient.name)}
-                      disabled={ingredient.disabled}
-                      className={`p-3 rounded-lg border-2 transition-all text-sm ${
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedIngredients.includes(ingredient.name)
                           ? 'border-orange-500 bg-orange-50'
                           : ingredient.disabled
@@ -603,11 +463,23 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                           : 'border-gray-200 hover:border-orange-300'
                       }`}
                     >
-                      {ingredient.name}
-                    </button>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIngredients.includes(ingredient.name)}
+                          onChange={() => handleIngredientToggle(ingredient.name)}
+                          disabled={ingredient.disabled}
+                          className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                        />
+                        <div className="ml-3">
+                          <div className="font-medium text-gray-900">{ingredient.name}</div>
+                        </div>
+                      </div>
+                    </label>
                   ))}
                 </div>
-                <p className="text-sm text-gray-600">
+                
+                <p className="text-sm text-gray-600 mt-3">
                   Ausgewählt: {selectedIngredients.length} / {selectedIngredients.includes('ohne Zutat') ? '0' : '4'}
                 </p>
               </div>
@@ -615,73 +487,52 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
             {/* Pizza Extras */}
             {(item.isPizza || item.isWunschPizza) && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 text-lg">
-                  Extras hinzufügen (je +1,50€)
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto ingredients-scroll">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-gray-900">Extras hinzufügen:</h4>
+                  <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+                    Optional
+                  </span>
+                </div>
+                
+                <div className="space-y-3 max-h-60 overflow-y-auto">
                   {pizzaExtras.map((extra) => (
-                    <button
+                    <label
                       key={extra.name}
-                      onClick={() => handleExtraToggle(extra.name)}
-                      className={`p-3 rounded-lg border-2 transition-all text-sm ${
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedExtras.includes(extra.name)
                           ? 'border-orange-500 bg-orange-50'
                           : 'border-gray-200 hover:border-orange-300'
                       }`}
                     >
-                      {extra.name}
-                    </button>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedExtras.includes(extra.name)}
+                          onChange={() => handleExtraToggle(extra.name)}
+                          className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                        />
+                        <div className="ml-3">
+                          <div className="font-medium text-gray-900">{extra.name}</div>
+                        </div>
+                      </div>
+                      <span className="font-bold text-gray-900">
+                        +{extra.price.toFixed(2).replace('.', ',')} €
+                      </span>
+                    </label>
                   ))}
                 </div>
+                
                 {selectedExtras.length > 0 && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mt-3">
                     Extras: +{(selectedExtras.length * 1.50).toFixed(2).replace('.', ',')} €
                   </p>
                 )}
               </div>
             )}
-
-            {/* Order Summary */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <div className="font-medium text-gray-900">{item.name}</div>
-              {selectedSize && (
-                <div className="text-sm text-blue-600">
-                  Größe: {selectedSize.name} {selectedSize.description && `- ${selectedSize.description}`}
-                </div>
-              )}
-              {selectedPastaType && (
-                <div className="text-sm text-yellow-600">
-                  Nudelsorte: {selectedPastaType}
-                </div>
-              )}
-              {selectedSauce && (
-                <div className="text-sm text-red-600">
-                  {item.isBeerSelection ? 'Bier' : (item.id >= 568 && item.id <= 573 && item.isSpezialitaet) ? 'Dressing' : 'Soße'}: {selectedSauce}
-                </div>
-              )}
-             {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-               <div className="text-sm text-orange-600">
-                 Sonderwunsch: {selectedSpecialRequest} (+{getSpecialRequestPrice(selectedSpecialRequest, selectedSize).toFixed(2).replace('.', ',')}€)
-               </div>
-             )}
-              {selectedIngredients.length > 0 && (
-                <div className="text-sm text-green-600">
-                  Zutaten: {selectedIngredients.join(', ')}
-                </div>
-              )}
-              {selectedExtras.length > 0 && (
-                <div className="text-sm text-purple-600">
-                  Extras: {selectedExtras.join(', ')} (+{(selectedExtras.length * 1.50).toFixed(2).replace('.', ',')}€)
-                </div>
-              )}
-              <div className="text-xl font-bold text-orange-600 pt-2 border-t">
-                Preis: {getCurrentPrice().toFixed(2).replace('.', ',')} €
-              </div>
-            </div>
           </div>
 
-          <div className="flex items-center justify-between pt-6 border-t mt-6">
+          <div className="flex items-center justify-between pt-4 border-t mt-6">
             <button
               onClick={onClose}
               className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
@@ -719,7 +570,6 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              <ShoppingCart className="w-5 h-5" />
               <span>Hinzufügen</span>
               <span className="font-bold">
                 {getTotalPrice().toFixed(2).replace('.', ',')} €
