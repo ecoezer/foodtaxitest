@@ -52,6 +52,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedPastaType, setSelectedPastaType] = useState<string>('');
   const [selectedSauce, setSelectedSauce] = useState<string>('');
   const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
+  const [quantity, setQuantity] = useState<number>(1);
 
   // Get dynamic pricing for special requests based on pizza size
   const getSpecialRequestPrice = useCallback((requestName: string, size?: PizzaSize) => {
@@ -126,9 +127,12 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   }, []);
 
   const handleAddToOrder = useCallback(() => {
-    onAddToOrder(item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
+    // Add multiple items based on quantity
+    for (let i = 0; i < quantity; i++) {
+      onAddToOrder(item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
+    }
     onClose();
-  }, [item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest, onAddToOrder, onClose]);
+  }, [item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest, quantity, onAddToOrder, onClose]);
 
   const getCurrentPrice = useCallback(() => {
     let price = selectedSize ? selectedSize.price : item.price;
@@ -141,6 +145,10 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
     
     return price;
   }, [selectedSize, selectedExtras, selectedSpecialRequest, item.price, getSpecialRequestPrice]);
+
+  const getTotalPrice = useCallback(() => {
+    return getCurrentPrice() * quantity;
+  }, [getCurrentPrice, quantity]);
 
   const canAddToOrder = useCallback(() => {
     // Check if pasta type is required and selected
@@ -170,6 +178,118 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
   if (!isOpen) return null;
 
+  // For simple pizzas (not Wunsch Pizza), show simplified modal
+  if (item.isPizza && !item.isWunschPizza && !item.isPasta && !item.isSpezialitaet && !item.isBeerSelection) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full">
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">{item.name}</h3>
+                <p className="text-gray-600 mt-2 text-sm">
+                  ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
+                </p>
+                {item.description && (
+                  <p className="text-gray-600 mt-2 text-sm">{item.description}</p>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-gray-900">{item.name}:</h4>
+                  <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
+                    1 Pflichtfeld
+                  </span>
+                </div>
+
+                {/* Size Selection */}
+                {item.sizes && item.sizes.length > 0 && (
+                  <div className="space-y-3">
+                    {item.sizes.map((size) => (
+                      <label
+                        key={size.name}
+                        className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedSize?.name === size.name
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="size"
+                            checked={selectedSize?.name === size.name}
+                            onChange={() => setSelectedSize(size)}
+                            className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                          />
+                          <div className="ml-3">
+                            <div className="font-medium text-gray-900">{size.name}, {size.description}</div>
+                            <div className="text-sm text-gray-500 underline cursor-pointer">Produktinfo</div>
+                          </div>
+                        </div>
+                        <span className="font-bold text-gray-900">
+                          {size.price.toFixed(2).replace('.', ',')} €
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quantity and Add Button */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Minus className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Plus className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleAddToOrder}
+                  disabled={!canAddToOrder()}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                    canAddToOrder()
+                      ? 'bg-orange-500 text-white hover:bg-orange-600'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>Hinzufügen</span>
+                  <span className="font-bold">
+                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Original complex modal for Wunsch Pizza, Pasta, etc.
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
