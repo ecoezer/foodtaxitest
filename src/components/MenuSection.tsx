@@ -566,9 +566,24 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </p>
                 )}
               </div>
+              <div className="text-right">
+                <div className="flex flex-col gap-1">
+                  <span className="text-2xl font-bold text-orange-600">
+                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {selectedSize?.name} - {selectedSize?.description} × {quantity}
+                  </span>
+                  {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+                    <span className="text-xs text-blue-600">
+                      {selectedSpecialRequest}: +{(getSpecialRequestPrice(selectedSpecialRequest, selectedSize) * quantity).toFixed(2).replace('.', ',')}€
+                    </span>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
               >
                 ×
               </button>
@@ -685,9 +700,29 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </p>
                 )}
               </div>
+              <div className="text-right">
+                <div className="flex flex-col gap-1">
+                  <span className="text-2xl font-bold text-orange-600">
+                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {selectedSize?.name} - {selectedSize?.description} × {quantity}
+                  </span>
+                  {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+                    <span className="text-xs text-blue-600">
+                      {selectedSpecialRequest}: +{(getSpecialRequestPrice(selectedSpecialRequest, selectedSize) * quantity).toFixed(2).replace('.', ',')}€
+                    </span>
+                  )}
+                  {selectedExtras.length > 0 && (
+                    <span className="text-xs text-green-600">
+                      Extras: +{(selectedExtras.length * 1.50 * quantity).toFixed(2).replace('.', ',')}€
+                    </span>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
               >
                 ×
               </button>
