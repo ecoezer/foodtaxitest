@@ -53,7 +53,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedSauce, setSelectedSauce] = useState<string>('');
   const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
   const [quantity, setQuantity] = useState<number>(1);
-  const [currentStep, setCurrentStep] = useState<'size' | 'specialRequest' | 'complete'>('size');
+  const [currentStep, setCurrentStep] = useState<'size' | 'specialRequest' | 'ingredients' | 'extras' | 'complete'>('size');
 
   // Get dynamic pricing for special requests based on pizza size
   const getSpecialRequestPrice = useCallback((requestName: string, size?: PizzaSize) => {
@@ -142,7 +142,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
   const handleSpecialRequestSelection = useCallback((request: string) => {
     setSelectedSpecialRequest(request);
-    setCurrentStep('complete');
+    setCurrentStep('ingredients');
   }, []);
 
   const handleBackToSize = useCallback(() => {
@@ -497,7 +497,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
 
               <button
-                onClick={() => setCurrentStep('complete')}
+                onClick={() => setCurrentStep(item.isWunschPizza ? 'ingredients' : 'extras')}
                 disabled={!selectedSpecialRequest}
                 className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
                   selectedSpecialRequest
@@ -514,6 +514,244 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
     );
   }
 
+  // Ingredients selection step for Wunsch Pizza
+  if (item.isWunschPizza && currentStep === 'ingredients') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {item.name}
+                  <span className="text-sm text-gray-500 block">Schritt 3: 4 Zutaten wählen:</span>
+                </h3>
+                <p className="text-gray-600 mt-2 text-sm">
+                  Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
+                </p>
+                {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+                  <p className="text-gray-600 mt-1 text-sm">
+                    Sonderwunsch: {selectedSpecialRequest}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto flex-1">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">4 Zutaten wählen:</h4>
+                <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
+                  1 Pflichtfeld
+                </span>
+              </div>
+              
+              <div className="space-y-2 max-h-48 overflow-y-auto ingredients-scroll">
+                {wunschPizzaIngredients.map((ingredient) => {
+                  const isSelected = selectedIngredients.includes(ingredient.name);
+                  const hasOhneZutat = selectedIngredients.includes('ohne Zutat');
+                  const validIngredients = selectedIngredients.filter(ing => ing !== 'ohne Zutat');
+                  const canSelect = ingredient.name === 'ohne Zutat' 
+                    ? validIngredients.length === 0
+                    : !hasOhneZutat && (isSelected || validIngredients.length < 4);
+                  
+                  return (
+                    <label
+                      key={ingredient.name}
+                      className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-orange-500 bg-orange-50'
+                          : !canSelect
+                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleIngredientToggle(ingredient.name)}
+                          disabled={!canSelect}
+                          className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                        />
+                        <div className="ml-3">
+                          <div className="font-medium text-gray-900">{ingredient.name}</div>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800 font-medium">
+                  Ausgewählt: {selectedIngredients.includes('ohne Zutat') ? '0 (ohne Zutat)' : `${selectedIngredients.length} / 4`}
+                </p>
+                {!selectedIngredients.includes('ohne Zutat') && selectedIngredients.length < 4 && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Noch {4 - selectedIngredients.length} Zutat{4 - selectedIngredients.length !== 1 ? 'en' : ''} wählen
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+              <button
+                onClick={() => setCurrentStep('specialRequest')}
+                className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+              >
+                Zurück
+              </button>
+
+              <button
+                onClick={() => setCurrentStep('extras')}
+                disabled={!canAddToOrder()}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  canAddToOrder()
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <span>Weiter</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Extras selection step for pizzas
+  if ((item.isPizza || item.isWunschPizza) && currentStep === 'extras') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {item.name}
+                  <span className="text-sm text-gray-500 block">
+                    {item.isWunschPizza ? 'Schritt 4: Extras hinzufügen:' : 'Extras hinzufügen:'}
+                  </span>
+                </h3>
+                <p className="text-gray-600 mt-2 text-sm">
+                  Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
+                </p>
+                {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
+                  <p className="text-gray-600 mt-1 text-sm">
+                    Sonderwunsch: {selectedSpecialRequest}
+                  </p>
+                )}
+                {item.isWunschPizza && selectedIngredients && selectedIngredients.length > 0 && (
+                  <p className="text-gray-600 mt-1 text-sm">
+                    Zutaten: {selectedIngredients.join(', ')}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto flex-1">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-gray-900">Extras hinzufügen:</h4>
+                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+                  Optional
+                </span>
+              </div>
+              
+              <div className="space-y-2 max-h-40 overflow-y-auto ingredients-scroll">
+                {pizzaExtras.map((extra) => (
+                  <label
+                    key={extra.name}
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedExtras.includes(extra.name)
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedExtras.includes(extra.name)}
+                        onChange={() => handleExtraToggle(extra.name)}
+                        className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                      />
+                      <div className="ml-3">
+                        <div className="font-medium text-gray-900">{extra.name}</div>
+                      </div>
+                    </div>
+                    <span className="font-bold text-gray-900">
+                      +{extra.price.toFixed(2).replace('.', ',')} €
+                    </span>
+                  </label>
+                ))}
+              </div>
+              
+              {selectedExtras.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm text-green-800 font-medium">
+                    Extras: +{(selectedExtras.length * 1.50).toFixed(2).replace('.', ',')} €
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+              <button
+                onClick={() => setCurrentStep(item.isWunschPizza ? 'ingredients' : 'specialRequest')}
+                className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+              >
+                Zurück
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Minus className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Plus className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleAddToOrder}
+                  className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all bg-orange-500 text-white hover:bg-orange-600"
+                >
+                  <span>Hinzufügen</span>
+                  <span className="font-bold">
+                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Original complex modal for Wunsch Pizza, Pasta, etc.
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -523,18 +761,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
             <div>
               <h3 className="text-xl font-bold text-gray-900">
                 {item.name}
-                {item.isWunschPizza && <span className="text-sm text-gray-500 block">Schritt 3: Weitere Optionen</span>}
               </h3>
-              {item.isWunschPizza && selectedSize && (
-                <p className="text-gray-600 mt-2 text-sm">
-                  Größe: {selectedSize.name} {selectedSize.description && `- ${selectedSize.description}`}
-                </p>
-              )}
-              {item.isWunschPizza && selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-                <p className="text-gray-600 mt-1 text-sm">
-                  Sonderwunsch: {selectedSpecialRequest}
-                </p>
-              )}
             </div>
             <button
               onClick={onClose}
@@ -545,95 +772,6 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
           </div>
 
           <div className="space-y-4 overflow-y-auto flex-1">
-            {/* Wunsch Pizza Ingredients */}
-            {item.isWunschPizza && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900">4 Zutaten wählen:</h4>
-                  <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-                    1 Pflichtfeld
-                  </span>
-                </div>
-                
-                <div className="space-y-2 max-h-48 overflow-y-auto ingredients-scroll">
-                  {wunschPizzaIngredients.map((ingredient) => (
-                    <label
-                      key={ingredient.name}
-                      className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedIngredients.includes(ingredient.name)
-                          ? 'border-orange-500 bg-orange-50'
-                          : ingredient.disabled
-                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedIngredients.includes(ingredient.name)}
-                          onChange={() => handleIngredientToggle(ingredient.name)}
-                          disabled={ingredient.disabled}
-                          className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                        />
-                        <div className="ml-3">
-                          <div className="font-medium text-gray-900">{ingredient.name}</div>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                
-                <p className="text-sm text-gray-600 mt-3">
-                  Ausgewählt: {selectedIngredients.length} / {selectedIngredients.includes('ohne Zutat') ? '0' : '4'}
-                </p>
-              </div>
-            )}
-
-            {/* Pizza Extras */}
-            {(item.isPizza || item.isWunschPizza) && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900">Extras hinzufügen:</h4>
-                  <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
-                    Optional
-                  </span>
-                </div>
-                
-                <div className="space-y-2 max-h-40 overflow-y-auto ingredients-scroll">
-                  {pizzaExtras.map((extra) => (
-                    <label
-                      key={extra.name}
-                      className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedExtras.includes(extra.name)
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedExtras.includes(extra.name)}
-                          onChange={() => handleExtraToggle(extra.name)}
-                          className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                        />
-                        <div className="ml-3">
-                          <div className="font-medium text-gray-900">{extra.name}</div>
-                        </div>
-                      </div>
-                      <span className="font-bold text-gray-900">
-                        +{extra.price.toFixed(2).replace('.', ',')} €
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                
-                {selectedExtras.length > 0 && (
-                  <p className="text-sm text-gray-600 mt-3">
-                    Extras: +{(selectedExtras.length * 1.50).toFixed(2).replace('.', ',')} €
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
