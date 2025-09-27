@@ -496,7 +496,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                         onChange={() => handleSpecialRequestSelection(request.name)}
                         className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
                       />
-                      <div className="ml-3">
+                      <div className="ml-2">
                         <div className="font-medium text-gray-900">{request.name}</div>
                         {request.description && (
                           <div className="text-sm text-gray-500">{request.description}</div>
