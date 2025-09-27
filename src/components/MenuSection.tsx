@@ -199,17 +199,15 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   if (!isOpen) return null;
 
   // For simple pizzas (not Wunsch Pizza), show simplified modal
-  if ((item.isPizza && !item.isWunschPizza && !item.isPasta && !item.isSpezialitaet && !item.isBeerSelection) || 
-      (item.isWunschPizza && currentStep === 'size')) {
+  if (item.isPizza && !item.isWunschPizza && !item.isPasta && !item.isSpezialitaet && !item.isBeerSelection) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full">
-          <div className="p-6">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-4 sm:p-6">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
                   {item.name}
-                  {item.isWunschPizza && <span className="text-sm text-gray-500 block">Schritt 1: Größe wählen</span>}
                 </h3>
                 <p className="text-gray-600 mt-2 text-sm">
                   ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
@@ -226,7 +224,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 overflow-y-auto flex-1">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold text-gray-900">{item.name}:</h4>
@@ -237,11 +235,11 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
                 {/* Size Selection */}
                 {item.sizes && item.sizes.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {item.sizes.map((size) => (
                       <label
                         key={size.name}
-                        className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
                           selectedSize?.name === size.name
                             ? 'border-orange-500 bg-orange-50'
                             : 'border-gray-200 hover:border-orange-300'
@@ -257,7 +255,6 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                           />
                           <div className="ml-3">
                             <div className="font-medium text-gray-900">{size.name}, {size.description}</div>
-                            <div className="text-sm text-gray-500 underline cursor-pointer">Produktinfo</div>
                           </div>
                         </div>
                         <span className="font-bold text-gray-900">
@@ -269,67 +266,151 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 )}
               </div>
 
-              {/* Show quantity and add button only for non-pizza items or when not Wunsch Pizza */}
-              {!item.isWunschPizza ? (
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                    >
-                      <Minus className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
-                      {quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                    >
-                      <Plus className="w-5 h-5 text-gray-600" />
-                    </button>
+              <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Minus className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Plus className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleAddToOrder}
+                  disabled={!canAddToOrder()}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                    canAddToOrder()
+                      ? 'bg-orange-500 text-white hover:bg-orange-600'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>Hinzufügen</span>
+                  <span className="font-bold">
+                    {getTotalPrice().toFixed(2).replace('.', ',')} €
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Wunsch Pizza size selection step
+  if (item.isWunschPizza && currentStep === 'size') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {item.name}
+                  <span className="text-sm text-gray-500 block">Schritt 1: Größe wählen</span>
+                </h3>
+                <p className="text-gray-600 mt-2 text-sm">
+                  ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
+                </p>
+                {item.description && (
+                  <p className="text-gray-600 mt-2 text-sm">{item.description}</p>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto flex-1">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold text-gray-900">{item.name}:</h4>
+                  <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
+                    1 Pflichtfeld
+                  </span>
+                </div>
+
+                {/* Size Selection */}
+                {item.sizes && item.sizes.length > 0 && (
+                  <div className="space-y-2">
+                    {item.sizes.map((size) => (
+                      <label
+                        key={size.name}
+                        className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedSize?.name === size.name
+                            ? 'border-orange-500 bg-orange-50'
+                            : 'border-gray-200 hover:border-orange-300'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="size"
+                            checked={selectedSize?.name === size.name}
+                            onChange={() => handleSizeSelection(size)}
+                            className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
+                          />
+                          <div className="ml-3">
+                            <div className="font-medium text-gray-900">{size.name}, {size.description}</div>
+                          </div>
+                        </div>
+                        <span className="font-bold text-gray-900">
+                          {size.price.toFixed(2).replace('.', ',')} €
+                        </span>
+                      </label>
+                    ))}
                   </div>
+                )}
+              </div>
 
+              <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={handleAddToOrder}
-                    disabled={!canAddToOrder()}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                      canAddToOrder()
-                        ? 'bg-orange-500 text-white hover:bg-orange-600'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
                   >
-                    <span>Hinzufügen</span>
-                    <span className="font-bold">
-                      {getTotalPrice().toFixed(2).replace('.', ',')} €
-                    </span>
+                    <Minus className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                  >
+                    <Plus className="w-5 h-5 text-gray-600" />
                   </button>
                 </div>
-              ) : (
-                // Next button for Wunsch Pizza size selection
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <button
-                    onClick={onClose}
-                    className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
-                  >
-                    Abbrechen
-                  </button>
 
-                  <button
-                    onClick={() => setCurrentStep('specialRequest')}
-                    disabled={!selectedSize}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                      selectedSize
-                        ? 'bg-orange-500 text-white hover:bg-orange-600'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    <span>Weiter</span>
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={() => setCurrentStep('specialRequest')}
+                  disabled={!selectedSize}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                    selectedSize
+                      ? 'bg-orange-500 text-white hover:bg-orange-600'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>Weiter</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -341,8 +422,8 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   if ((item.isPizza || item.isWunschPizza) && currentStep === 'specialRequest') {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full">
-          <div className="p-6">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-4 sm:p-6">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -363,7 +444,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900">Dein Sonderwunsch:</h4>
                 <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
@@ -371,11 +452,11 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {getDynamicSpecialRequests().map((request) => (
                   <label
                     key={request.name}
-                    className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedSpecialRequest === request.name
                         ? 'border-orange-500 bg-orange-50'
                         : 'border-gray-200 hover:border-orange-300'
@@ -406,7 +487,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-6 border-t mt-6">
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
               <button
                 onClick={handleBackToSize}
                 className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
@@ -436,7 +517,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900">
@@ -462,7 +543,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
             </button>
           </div>
 
-          <div className="space-y-6 overflow-y-auto flex-1">
+          <div className="space-y-4 overflow-y-auto flex-1">
             {/* Wunsch Pizza Ingredients */}
             {item.isWunschPizza && (
               <div>
@@ -473,11 +554,11 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </span>
                 </div>
                 
-                <div className="space-y-3 max-h-60 overflow-y-auto ingredients-scroll">
+                <div className="space-y-2 max-h-48 overflow-y-auto ingredients-scroll">
                   {wunschPizzaIngredients.map((ingredient) => (
                     <label
                       key={ingredient.name}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedIngredients.includes(ingredient.name)
                           ? 'border-orange-500 bg-orange-50'
                           : ingredient.disabled
@@ -517,11 +598,11 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </span>
                 </div>
                 
-                <div className="space-y-3 max-h-48 overflow-y-auto ingredients-scroll">
+                <div className="space-y-2 max-h-40 overflow-y-auto ingredients-scroll">
                   {pizzaExtras.map((extra) => (
                     <label
                       key={extra.name}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedExtras.includes(extra.name)
                           ? 'border-orange-500 bg-orange-50'
                           : 'border-gray-200 hover:border-orange-300'
@@ -554,7 +635,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t mt-6 flex-shrink-0">
+          <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
             <button
               onClick={onClose}
               className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
@@ -583,20 +664,20 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 </button>
               </div>
 
-            <button
-              onClick={handleAddToOrder}
-              disabled={!canAddToOrder()}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                canAddToOrder()
-                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <span>Hinzufügen</span>
-              <span className="font-bold">
-                {getTotalPrice().toFixed(2).replace('.', ',')} €
-              </span>
-            </button>
+              <button
+                onClick={handleAddToOrder}
+                disabled={!canAddToOrder()}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  canAddToOrder()
+                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <span>Hinzufügen</span>
+                <span className="font-bold">
+                  {getTotalPrice().toFixed(2).replace('.', ',')} €
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -659,25 +740,25 @@ const MenuSection: React.FC<MenuSectionProps> = ({ title, description, subTitle,
           {items.map((item, index) => (
             <div
               key={`${item.id}-${index}`}
-              className="p-3 sm:p-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-orange-50/30 transition-all duration-200 group relative"
+              className="p-2 sm:p-3 hover:bg-gradient-to-r hover:from-gray-50 hover:to-orange-50/30 transition-all duration-200 group relative"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-3 mb-2">
+                  <div className="flex items-start gap-2 sm:gap-3 mb-1 sm:mb-2">
                     <span className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-sm sm:text-base font-bold">
                       {item.number}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 text-base sm:text-lg leading-tight group-hover:text-orange-600 transition-colors">
+                      <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight group-hover:text-orange-600 transition-colors">
                         {item.name}
                       </h3>
                       {item.description && (
-                        <p className="text-gray-600 text-sm sm:text-base mt-1 leading-relaxed">
+                        <p className="text-gray-600 text-xs sm:text-sm mt-1 leading-relaxed">
                           {item.description}
                         </p>
                       )}
                       {item.allergens && (
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-gray-500 mt-1">
                           <span className="font-medium">Allergene:</span> {item.allergens}
                         </p>
                       )}
@@ -689,13 +770,13 @@ const MenuSection: React.FC<MenuSectionProps> = ({ title, description, subTitle,
                   <div className="text-right">
                     {item.sizes && item.sizes.length > 0 ? (
                       <div className="space-y-1">
-                        <div className="text-sm text-gray-600">ab</div>
-                        <div className="text-lg sm:text-xl font-bold text-orange-600">
+                        <div className="text-xs text-gray-600">ab</div>
+                        <div className="text-base sm:text-lg font-bold text-orange-600">
                           {Math.min(...item.sizes.map(s => s.price)).toFixed(2).replace('.', ',')} €
                         </div>
                       </div>
                     ) : (
-                      <div className="text-lg sm:text-xl font-bold text-orange-600 relative">
+                      <div className="text-base sm:text-lg font-bold text-orange-600 relative">
                         {/* Show original price crossed out if there's a special offer */}
                         {((item.id === 84 && new Date().getDay() === 3) || 
                           ([547, 548].includes(item.id) && new Date().getDay() === 4)) && (
@@ -723,62 +804,62 @@ const MenuSection: React.FC<MenuSectionProps> = ({ title, description, subTitle,
               </div>
 
               {/* Configuration indicators */}
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
                 {/* Special offer indicators */}
                 {item.id === 84 && new Date().getDay() === 3 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full animate-pulse">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded-full animate-pulse">
                     🔥 RIPPCHEN-TAG SPEZIAL
                   </span>
                 )}
                 {[546, 547, 548, 549].includes(item.id) && new Date().getDay() === 4 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full animate-pulse">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded-full animate-pulse">
                     🔥 SCHNITZEL-TAG SPEZIAL
                   </span>
                 )}
                 {item.sizes && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
                     <Star className="w-3 h-3" />
                     Größen verfügbar
                   </span>
                 )}
                 {item.isWunschPizza && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
                     <ChefHat className="w-3 h-3" />
                     4 Zutaten wählbar
                   </span>
                 )}
                 {(item.isPizza && !item.isWunschPizza) && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
                     <Plus className="w-3 h-3" />
                     Extras verfügbar
                   </span>
                 )}
                 {item.isWunschPizza && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
                     <Plus className="w-3 h-3" />
                     Extras verfügbar
                   </span>
                 )}
                 {item.isPasta && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded-full">
                     <Clock className="w-3 h-3" />
                     Nudelsorte wählbar
                   </span>
                 )}
                 {item.isSpezialitaet && ![81, 82].includes(item.id) && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
                     <ChefHat className="w-3 h-3" />
                     Soße wählbar
                   </span>
                 )}
                 {item.id >= 568 && item.id <= 573 && item.isSpezialitaet && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-xs rounded-full">
                     <ChefHat className="w-3 h-3" />
                     Dressing wählbar
                   </span>
                 )}
                 {item.isBeerSelection && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">
                     <ChefHat className="w-3 h-3" />
                     Bier wählbar
                   </span>
