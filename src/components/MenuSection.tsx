@@ -806,10 +806,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   onClick={handleAddToOrder}
                   className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all bg-orange-500 text-white hover:bg-orange-600 text-sm sm:text-base"
                 >
-                  <span>Hinzufügen</span>
-                  <span className="font-bold">
-                    {getTotalPrice().toFixed(2).replace('.', ',')} €
-                  </span>
+                  Hinzufügen
                 </button>
               </div>
             </div>
