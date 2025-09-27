@@ -413,7 +413,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   // Original complex modal for Wunsch Pizza, Pasta, etc.
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-md w-full">
+      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -440,7 +440,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
             </button>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-y-auto flex-1">
             {/* Wunsch Pizza Ingredients */}
             {item.isWunschPizza && (
               <div>
@@ -451,7 +451,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </span>
                 </div>
                 
-                <div className="space-y-3 max-h-80 overflow-y-auto">
+                <div className="space-y-3 max-h-60 overflow-y-auto ingredients-scroll">
                   {wunschPizzaIngredients.map((ingredient) => (
                     <label
                       key={ingredient.name}
@@ -495,7 +495,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </span>
                 </div>
                 
-                <div className="space-y-3 max-h-80 overflow-y-auto ingredients-scroll">
+                <div className="space-y-3 max-h-48 overflow-y-auto ingredients-scroll">
                   {pizzaExtras.map((extra) => (
                     <label
                       key={extra.name}
@@ -532,7 +532,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t mt-6">
+          <div className="flex items-center justify-between pt-4 border-t mt-6 flex-shrink-0">
             <button
               onClick={onClose}
               className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
