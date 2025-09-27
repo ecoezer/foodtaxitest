@@ -142,7 +142,6 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
   const handleSpecialRequestSelection = useCallback((request: string) => {
     setSelectedSpecialRequest(request);
-    setCurrentStep('ingredients');
   }, []);
 
   const handleBackToSize = useCallback(() => {
