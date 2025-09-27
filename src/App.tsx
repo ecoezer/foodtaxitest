@@ -297,15 +297,15 @@ function App() {
   }, [findCartElement, calculateScrollPosition, animateCartHighlight, performFallbackScroll]);
 
   // =================== MEMOIZED CALLBACKS ===================
-  const memoizedAddItem = useCallback((menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => {
+  const memoizedAddItem = useCallback((menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => {
     addItem(menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
   }, [addItem]);
 
-  const memoizedRemoveItem = useCallback((id: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => {
+  const memoizedRemoveItem = useCallback((id: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => {
     removeItem(id, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
   }, [removeItem]);
 
-  const memoizedUpdateQuantity = useCallback((id: number, quantity: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => {
+  const memoizedUpdateQuantity = useCallback((id: number, quantity: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => {
     updateQuantity(id, quantity, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
   }, [updateQuantity]);
 
