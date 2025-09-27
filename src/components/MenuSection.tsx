@@ -316,9 +316,22 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   {item.name}
                   <span className="text-sm text-gray-500 block">Schritt 1: Größe wählen</span>
                 </h3>
-                <p className="text-gray-600 mt-2 text-sm">
-                  ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
-                </p>
+                <div className="text-gray-600 mt-2 text-sm">
+                  {selectedSize ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-lg font-bold text-orange-600">
+                        {selectedSize.price.toFixed(2).replace('.', ',')} €
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {selectedSize.name} - {selectedSize.description}
+                      </span>
+                    </div>
+                  ) : (
+                    <span>
+                      ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
+                    </span>
+                  )}
+                </div>
                 {item.description && (
                   <p className="text-gray-600 mt-2 text-sm">{item.description}</p>
                 )}
