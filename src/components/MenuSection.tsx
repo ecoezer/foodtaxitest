@@ -495,7 +495,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   </span>
                 </div>
                 
-                <div className="space-y-3 max-h-60 overflow-y-auto">
+                <div className="space-y-3 max-h-80 overflow-y-auto ingredients-scroll">
                   {pizzaExtras.map((extra) => (
                     <label
                       key={extra.name}
