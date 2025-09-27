@@ -161,7 +161,13 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   }, [selectedSize, selectedExtras, selectedSpecialRequest, item.price, getSpecialRequestPrice]);
 
   const getTotalPrice = useCallback(() => {
-    return getCurrentPrice() * quantity;
+    const basePrice = selectedSize ? selectedSize.price : item.price;
+    const extrasPrice = selectedExtras.length * 1.50;
+    const specialRequestPrice = selectedSpecialRequest && selectedSpecialRequest !== 'Standard' 
+      ? getSpecialRequestPrice(selectedSpecialRequest, selectedSize) 
+      : 0;
+    
+    return (basePrice + extrasPrice + specialRequestPrice) * quantity;
   }, [getCurrentPrice, quantity]);
 
   const canAddToOrder = useCallback(() => {
@@ -437,9 +443,9 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   // Special request selection step for pizzas
   if ((item.isPizza || item.isWunschPizza) && currentStep === 'specialRequest') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="p-4 sm:p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col">
+          <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -470,7 +476,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
             </div>
 
-            <div className="space-y-4 overflow-y-auto flex-1">
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900">Dein Sonderwunsch:</h4>
                 <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
@@ -513,10 +519,10 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4">
               <button
                 onClick={handleBackToSize}
-                className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
               >
                 Zurück
               </button>
@@ -524,7 +530,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               <button
                 onClick={() => setCurrentStep(item.isWunschPizza ? 'ingredients' : 'extras')}
                 disabled={!selectedSpecialRequest}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
                   selectedSpecialRequest
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -542,9 +548,9 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   // Ingredients selection step for Wunsch Pizza
   if (item.isWunschPizza && currentStep === 'ingredients') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="p-4 sm:p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col">
+          <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -568,7 +574,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
             </div>
 
-            <div className="space-y-4 overflow-y-auto flex-1">
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900">4 Zutaten wählen:</h4>
                 <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
@@ -625,10 +631,10 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4">
               <button
                 onClick={() => setCurrentStep('specialRequest')}
-                className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
               >
                 Zurück
               </button>
@@ -636,7 +642,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               <button
                 onClick={() => setCurrentStep('extras')}
                 disabled={!canAddToOrder()}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
                   canAddToOrder()
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -654,9 +660,9 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   // Extras selection step for pizzas
   if ((item.isPizza || item.isWunschPizza) && currentStep === 'extras') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="p-4 sm:p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col">
+          <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -687,7 +693,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
             </div>
 
-            <div className="space-y-4 overflow-y-auto flex-1">
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900">Extras hinzufügen:</h4>
                 <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
@@ -732,15 +738,15 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4">
               <button
                 onClick={() => setCurrentStep(item.isWunschPizza ? 'ingredients' : 'specialRequest')}
-                className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
               >
                 Zurück
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -763,7 +769,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
 
                 <button
                   onClick={handleAddToOrder}
-                  className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all bg-orange-500 text-white hover:bg-orange-600"
+                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all bg-orange-500 text-white hover:bg-orange-600 text-sm sm:text-base"
                 >
                   <span>Hinzufügen</span>
                   <span className="font-bold">
