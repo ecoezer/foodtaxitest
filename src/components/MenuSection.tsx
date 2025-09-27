@@ -320,10 +320,10 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                   {selectedSize ? (
                     <div className="flex flex-col gap-1">
                       <span className="text-lg font-bold text-orange-600">
-                        {selectedSize.price.toFixed(2).replace('.', ',')} €
+                        {getTotalPrice().toFixed(2).replace('.', ',')} €
                       </span>
                       <span className="text-xs text-gray-500">
-                        {selectedSize.name} - {selectedSize.description}
+                        {selectedSize.name} - {selectedSize.description} × {quantity}
                       </span>
                     </div>
                   ) : (
