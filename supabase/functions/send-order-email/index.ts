@@ -36,6 +36,7 @@ interface OrderItem {
   selectedExtras?: string[];
   selectedPastaType?: string;
   selectedSauce?: string;
+  selectedSpecialRequest?: string;
 }
 
 interface OrderData {
@@ -111,6 +112,10 @@ function generateEmailHTML(orderData: OrderData): string {
     
     if (item.selectedExtras && item.selectedExtras.length > 0) {
       itemDetails += ` - Extras: ${item.selectedExtras.join(', ')} (+${(item.selectedExtras.length * 1.50).toFixed(2)}€)`;
+    }
+    
+    if (item.selectedSpecialRequest && item.selectedSpecialRequest !== 'Standard') {
+      itemDetails += ` - Sonderwunsch: ${item.selectedSpecialRequest}`;
     }
 
     const itemTotal = (item.menuItem.price * item.quantity).toFixed(2).replace('.', ',');

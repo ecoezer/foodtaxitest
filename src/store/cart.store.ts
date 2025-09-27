@@ -11,18 +11,19 @@ interface OrderItem {
   selectedExtras?: string[];
   selectedPastaType?: string;
   selectedSauce?: string;
+  selectedSpecialRequest?: string;
 }
 
 interface CartState {
   items: OrderItem[];
-  addItem: (menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => void;
-  removeItem: (id: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => void;
-  updateQuantity: (id: number, quantity: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => void;
+  addItem: (menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => void;
+  removeItem: (id: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => void;
+  updateQuantity: (id: number, quantity: number, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => void;
   clearCart: () => void;
 }
 
 // Helper function to create a unique key for cart items
-const getItemKey = (menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => {
+const getItemKey = (menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => {
   const sizeKey = selectedSize ? selectedSize.name : 'default';
   const ingredientsKey = selectedIngredients && selectedIngredients.length > 0 
     ? selectedIngredients.sort().join(',') 
@@ -32,14 +33,15 @@ const getItemKey = (menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngred
     : 'none';
   const pastaTypeKey = selectedPastaType || 'none';
   const sauceKey = selectedSauce || 'none';
-  return `${menuItem.id}-${sizeKey}-${ingredientsKey}-${extrasKey}-${pastaTypeKey}-${sauceKey}`;
+  const specialRequestKey = selectedSpecialRequest || 'none';
+  return `${menuItem.id}-${sizeKey}-${ingredientsKey}-${extrasKey}-${pastaTypeKey}-${sauceKey}-${specialRequestKey}`;
 };
 
 // Helper function to find item in cart
-const findItemIndex = (items: OrderItem[], menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string) => {
+const findItemIndex = (items: OrderItem[], menuItem: MenuItem, selectedSize?: PizzaSize, selectedIngredients?: string[], selectedExtras?: string[], selectedPastaType?: string, selectedSauce?: string, selectedSpecialRequest?: string) => {
   return items.findIndex(item => {
-    const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce);
-    const searchKey = getItemKey(menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce);
+    const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce, item.selectedSpecialRequest);
+    const searchKey = getItemKey(menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
     return itemKey === searchKey;
   });
 };
@@ -49,10 +51,10 @@ export const useCartStore = create<CartState>()(
     set => ({
       items: [],
 
-      addItem: (menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce) =>
+      addItem: (menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest) =>
         set(state => {
           const currentItems = [...state.items];
-          const existingItemIndex = findItemIndex(currentItems, menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce);
+          const existingItemIndex = findItemIndex(currentItems, menuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
 
           if (existingItemIndex >= 0) {
             currentItems[existingItemIndex] = {
@@ -71,6 +73,20 @@ export const useCartStore = create<CartState>()(
               itemToAdd.price += selectedExtras.length * 1.50;
             }
             
+            // Add special request cost
+            if (selectedSpecialRequest && selectedSpecialRequest !== 'Standard') {
+              const pizzaSpecialRequests = [
+                { name: 'Standard', price: 0 },
+                { name: 'Käserand', price: 2.00 },
+                { name: 'Americanstyle', price: 1.50 },
+                { name: 'als Calzone', price: 1.00 }
+              ];
+              const specialRequest = pizzaSpecialRequests.find(req => req.name === selectedSpecialRequest);
+              if (specialRequest) {
+                itemToAdd.price += specialRequest.price;
+              }
+            }
+            
             currentItems.push({ 
               menuItem: itemToAdd, 
               quantity: 1,
@@ -78,29 +94,30 @@ export const useCartStore = create<CartState>()(
               selectedIngredients: selectedIngredients || [],
               selectedExtras: selectedExtras || [],
               selectedPastaType,
-              selectedSauce
+              selectedSauce,
+              selectedSpecialRequest
             });
           }
 
           return { items: currentItems };
         }),
 
-      removeItem: (id, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce) =>
+      removeItem: (id, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest) =>
         set(state => ({
           items: state.items.filter(item => {
-            const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce);
-            const searchKey = getItemKey({ id } as MenuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce);
+            const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce, item.selectedSpecialRequest);
+            const searchKey = getItemKey({ id } as MenuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
             return itemKey !== searchKey;
           })
         })),
 
-      updateQuantity: (id, quantity, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce) =>
+      updateQuantity: (id, quantity, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest) =>
         set(state => {
           if (quantity <= 0) {
             return {
               items: state.items.filter(item => {
-                const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce);
-                const searchKey = getItemKey({ id } as MenuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce);
+                const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce, item.selectedSpecialRequest);
+                const searchKey = getItemKey({ id } as MenuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
                 return itemKey !== searchKey;
               })
             };
@@ -108,8 +125,8 @@ export const useCartStore = create<CartState>()(
 
           return {
             items: state.items.map(item => {
-              const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce);
-              const searchKey = getItemKey({ id } as MenuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce);
+              const itemKey = getItemKey(item.menuItem, item.selectedSize, item.selectedIngredients, item.selectedExtras, item.selectedPastaType, item.selectedSauce, item.selectedSpecialRequest);
+              const searchKey = getItemKey({ id } as MenuItem, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
               return itemKey === searchKey ? { ...item, quantity } : item;
             })
           };
