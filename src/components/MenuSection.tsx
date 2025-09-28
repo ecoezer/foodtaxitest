@@ -660,7 +660,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
               
               {/* Status Info - Fixed */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 flex-shrink-0">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-1.5 mt-4 flex-shrink-0">
                 <p className="text-sm text-blue-800 font-medium">
                   Ausgewählt: {selectedIngredients.includes('ohne Zutat') ? '0 (ohne Zutat)' : `${selectedIngredients.length} / 4`}
                 </p>
@@ -673,10 +673,10 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
             </div>
 
             {/* Bottom Buttons - Fixed */}
-            <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 pt-4 border-t flex-shrink-0 bg-white">
+            <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 pt-3 border-t flex-shrink-0 bg-white">
               <button
                 onClick={() => setCurrentStep('specialRequest')}
-                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
               >
                 Zurück
               </button>
@@ -684,7 +684,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               <button
                 onClick={() => setCurrentStep('extras')}
                 disabled={!canAddToOrder()}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all text-sm sm:text-base ${
                   canAddToOrder()
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
