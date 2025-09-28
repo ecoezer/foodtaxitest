@@ -641,8 +641,17 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 {!showAllIngredients && wunschPizzaIngredients.length > 3 && (
                   <button
                     type="button"
-                    onClick={() => setShowAllIngredients(true)}
-                    className="w-full p-3 text-center text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg border-2 border-dashed border-orange-300 hover:border-orange-400 transition-all text-sm font-medium"
+                    onClick={() => {
+                      setShowAllIngredients(true);
+                      // Force scrollbar to be visible immediately
+                      setTimeout(() => {
+                        const scrollContainer = document.querySelector('.ingredients-scroll');
+                        if (scrollContainer) {
+                          scrollContainer.style.overflowY = 'scroll';
+                        }
+                      }, 0);
+                    }}
+                    className="w-full p-0.5 text-center text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg border-2 border-dashed border-orange-300 hover:border-orange-400 transition-all text-sm font-medium"
                   >
                     Mehr anzeigen ({wunschPizzaIngredients.length - 3} weitere Zutaten)
                   </button>
@@ -651,8 +660,17 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 {showAllIngredients && (
                   <button
                     type="button"
-                    onClick={() => setShowAllIngredients(false)}
-                    className="w-full p-3 text-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 transition-all text-sm font-medium"
+                    onClick={() => {
+                      setShowAllIngredients(false);
+                      // Reset scrollbar behavior
+                      setTimeout(() => {
+                        const scrollContainer = document.querySelector('.ingredients-scroll');
+                        if (scrollContainer) {
+                          scrollContainer.style.overflowY = 'auto';
+                        }
+                      }, 0);
+                    }}
+                    className="w-full p-0.5 text-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 transition-all text-sm font-medium"
                   >
                     Weniger anzeigen
                   </button>
