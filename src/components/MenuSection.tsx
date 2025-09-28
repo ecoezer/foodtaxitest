@@ -550,8 +550,8 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   if (item.isWunschPizza && currentStep === 'ingredients') {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col">
-          <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
+        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="p-3 sm:p-4 md:p-6 flex flex-col h-full">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -590,7 +590,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </button>
             </div>
 
-            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900">4 Zutaten wählen:</h4>
                 <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
@@ -598,7 +598,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 </span>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-y-auto flex-1 pr-2" style={{ maxHeight: 'calc(100% - 120px)' }}>
                 {/* Show first 3 ingredients or all if expanded */}
                 {(showAllIngredients ? wunschPizzaIngredients : wunschPizzaIngredients.slice(0, 3)).map((ingredient) => {
                   const isSelected = selectedIngredients.includes(ingredient.name);
@@ -657,7 +657,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 )}
               </div>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 flex-shrink-0">
                 <p className="text-sm text-blue-800 font-medium">
                   Ausgewählt: {selectedIngredients.includes('ohne Zutat') ? '0 (ohne Zutat)' : `${selectedIngredients.length} / 4`}
                 </p>
@@ -669,7 +669,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4">
+            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4 bg-white">
               <button
                 onClick={() => setCurrentStep('specialRequest')}
                 className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
