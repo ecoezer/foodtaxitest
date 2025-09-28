@@ -737,7 +737,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
               
               <div className="space-y-2 max-h-40 overflow-y-auto ingredients-scroll">
-                {pizzaExtras.sort((a, b) => a.name.localeCompare(b.name)).map((extra) => (
+                {pizzaExtras.map((extra) => (
                   <label
                     key={extra.name}
                     className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
