@@ -660,12 +660,12 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
               </div>
               
               {/* Status Info - Fixed */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-1.5 mt-4 flex-shrink-0">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-1 mt-2.5 flex-shrink-0">
                 <p className="text-sm text-blue-800 font-medium">
                   Ausgewählt: {selectedIngredients.includes('ohne Zutat') ? '0 (ohne Zutat)' : `${selectedIngredients.length} / 4`}
                 </p>
                 {!selectedIngredients.includes('ohne Zutat') && selectedIngredients.length < 4 && (
-                  <p className="text-xs text-blue-600 mt-1">
+                  <p className="text-xs text-blue-600 mt-0.5">
                     Noch {4 - selectedIngredients.length} Zutat{4 - selectedIngredients.length !== 1 ? 'en' : ''} wählen
                   </p>
                 )}
