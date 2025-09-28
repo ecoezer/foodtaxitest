@@ -54,6 +54,7 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
   const [quantity, setQuantity] = useState<number>(1);
   const [currentStep, setCurrentStep] = useState<'size' | 'specialRequest' | 'ingredients' | 'extras' | 'complete'>('size');
+  const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
 
   // Get dynamic pricing for special requests based on pizza size
   const getSpecialRequestPrice = useCallback((requestName: string, size?: PizzaSize) => {
@@ -597,8 +598,9 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                 </span>
               </div>
               
-              <div className="space-y-2 max-h-48 overflow-y-auto ingredients-scroll">
-                {wunschPizzaIngredients.map((ingredient) => {
+              <div className="space-y-2">
+                {/* Show first 3 ingredients or all if expanded */}
+                {(showAllIngredients ? wunschPizzaIngredients : wunschPizzaIngredients.slice(0, 3)).map((ingredient) => {
                   const isSelected = selectedIngredients.includes(ingredient.name);
                   const hasOhneZutat = selectedIngredients.includes('ohne Zutat');
                   const validIngredients = selectedIngredients.filter(ing => ing !== 'ohne Zutat');
@@ -632,6 +634,27 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
                     </label>
                   );
                 })}
+                
+                {/* Show more/less button */}
+                {!showAllIngredients && wunschPizzaIngredients.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllIngredients(true)}
+                    className="w-full p-3 text-center text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg border-2 border-dashed border-orange-300 hover:border-orange-400 transition-all text-sm font-medium"
+                  >
+                    Mehr anzeigen ({wunschPizzaIngredients.length - 3} weitere Zutaten)
+                  </button>
+                )}
+                
+                {showAllIngredients && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllIngredients(false)}
+                    className="w-full p-3 text-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 transition-all text-sm font-medium"
+                  >
+                    Weniger anzeigen
+                  </button>
+                )}
               </div>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
