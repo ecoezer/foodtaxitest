@@ -453,24 +453,24 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
             >
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-3 mb-2">
+                  <div className="flex items-start gap-1 mb-1">
                     <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
                       Nr. {item.number}
                     </span>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-none">
                       {item.name}
                     </h3>
                   </div>
                   
                   {item.description && (
-                    <p className="text-sm sm:text-base text-gray-600 mb-2 leading-relaxed">
+                    <p className="text-sm sm:text-base text-gray-600 mb-1 leading-tight">
                       {item.description}
                     </p>
                   )}
                   
                   {/* Sauce selectable indicator */}
                   {(item.isSpezialitaet || item.name.toLowerCase().includes('salat') || item.isBeerSelection) && (
-                    <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center gap-1 mb-1">
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
                         🥄 Soße wählbar
                       </span>
@@ -479,7 +479,7 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
                   
                   {/* Pizza extras indicator */}
                   {(item.isPizza || item.isWunschPizza) && (
-                    <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center gap-1 mb-1">
                       <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
                         ➕ Extras wählbar
                       </span>
@@ -488,7 +488,7 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
                   
                   {/* Pasta type indicator */}
                   {item.isPasta && (
-                    <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center gap-1 mb-1">
                       <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
                         🍝 Nudelsorte wählbar
                       </span>
