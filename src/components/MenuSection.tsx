@@ -437,7 +437,7 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
       <div className={`${bgColor} text-white p-4 sm:p-6 rounded-t-xl`}>
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{title}</h2>
         {subTitle && (
-          <p className="text-sm sm:text-base opacity-90 mb-2">{subTitle}</p>
+          <p className="text-xs opacity-90 mb-2">{subTitle}</p>
         )}
         {description && (
           <p className="text-sm sm:text-base opacity-90">{description}</p>
