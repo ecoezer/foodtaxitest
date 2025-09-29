@@ -468,32 +468,38 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
                     </p>
                   )}
                   
-                  {/* Sauce selectable indicator */}
-                  {(item.isSpezialitaet || item.name.toLowerCase().includes('salat') || item.isBeerSelection) && (
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                  {/* Compact indicator badges */}
+                  <div className="flex items-center gap-2 mb-2">
+                    {item.sizes && item.sizes.length > 0 && (
+                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium border border-blue-200">
+                        ⭐ Größen verfügbar
+                      </span>
+                    )}
+                    
+                    {item.isWunschPizza && (
+                      <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full font-medium border border-purple-200">
+                        🍕 4 Zutaten wählbar
+                      </span>
+                    )}
+                    
+                    {(item.isPizza || item.isWunschPizza) && (
+                      <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full font-medium border border-green-200">
+                        + Extras verfügbar
+                      </span>
+                    )}
+                    
+                    {(item.isSpezialitaet || item.name.toLowerCase().includes('salat') || item.isBeerSelection) && (
+                      <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full font-medium border border-yellow-200">
                         🥄 Soße wählbar
                       </span>
-                    </div>
-                  )}
-                  
-                  {/* Pizza extras indicator */}
-                  {(item.isPizza || item.isWunschPizza) && (
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
-                        ➕ Extras wählbar
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Pasta type indicator */}
-                  {item.isPasta && (
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                    )}
+                    
+                    {item.isPasta && (
+                      <span className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded-full font-medium border border-orange-200">
                         🍝 Nudelsorte wählbar
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                   
                   {item.allergens && (
                     <p className="text-xs text-gray-500">
@@ -518,7 +524,7 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
 
                   <button
                     onClick={() => handleItemClick(item)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base"
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-lg transition-colors font-medium flex items-center gap-1 text-sm"
                   >
                     <Plus className="w-4 h-4" />
                     Hinzufügen
