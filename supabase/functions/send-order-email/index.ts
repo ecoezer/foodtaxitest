@@ -92,7 +92,7 @@ function generateEmailHTML(orderData: OrderData): string {
     : null;
 
   const orderItemsHTML = orderData.orderItems.map(item => {
-    let itemDetails = `${item.quantity}x Nr. ${item.menuItem.number} ${item.menuItem.name}`;
+    let itemDetails = `${item.quantity}x ${item.menuItem.number} ${item.menuItem.name}`;
     
     if (item.selectedSize) {
       itemDetails += ` (${item.selectedSize.name}${item.selectedSize.description ? ` - ${item.selectedSize.description}` : ''})`;

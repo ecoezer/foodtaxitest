@@ -682,7 +682,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
 
       const orderDetails = orderItems
         .map(item => {
-          let itemText = `${item.quantity}x Nr. ${item.menuItem.number} ${item.menuItem.name}`;
+          let itemText = `${item.quantity}x ${item.menuItem.number} ${item.menuItem.name}`;
           if (item.selectedSize) {
             itemText += ` (${item.selectedSize.name}${item.selectedSize.description ? ` - ${item.selectedSize.description}` : ''})`;
           }
