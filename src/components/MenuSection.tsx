@@ -455,7 +455,7 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start gap-1 mb-1">
                     <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
-                      Nr. {item.number}
+                      {item.number}
                     </span>
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-none">
                       {item.name}
