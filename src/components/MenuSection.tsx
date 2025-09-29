@@ -1,26 +1,18 @@
-import React, { useState, useCallback, memo } from 'react';
-import { Plus, Minus, ShoppingCart, ChefHat, Clock, Star, ArrowRight, Check } from 'lucide-react';
+import React, { useState, memo, useCallback, useMemo } from 'react';
+import { Plus, X, ShoppingCart } from 'lucide-react';
 import { MenuItem, PizzaSize } from '../types';
-import { 
-  wunschPizzaIngredients, 
-  pizzaExtras, 
-  pizzaSpecialRequests,
-  pastaTypes, 
-  sauceTypes, 
-  saladSauceTypes,
-  beerTypes 
-} from '../data/menuItems';
+import { pizzaExtras, pizzaSpecialRequests, pastaTypes, sauceTypes, saladSauceTypes, beerTypes } from '../data/menuItems';
 
 interface MenuSectionProps {
   title: string;
   description?: string;
   subTitle?: string;
   items: MenuItem[];
-  bgColor?: string;
+  bgColor: string;
   onAddToOrder: (
-    menuItem: MenuItem, 
-    selectedSize?: PizzaSize, 
-    selectedIngredients?: string[], 
+    menuItem: MenuItem,
+    selectedSize?: PizzaSize,
+    selectedIngredients?: string[],
     selectedExtras?: string[],
     selectedPastaType?: string,
     selectedSauce?: string,
@@ -33,9 +25,9 @@ interface ItemModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToOrder: (
-    menuItem: MenuItem, 
-    selectedSize?: PizzaSize, 
-    selectedIngredients?: string[], 
+    menuItem: MenuItem,
+    selectedSize?: PizzaSize,
+    selectedIngredients?: string[],
     selectedExtras?: string[],
     selectedPastaType?: string,
     selectedSauce?: string,
@@ -52,45 +44,6 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   const [selectedPastaType, setSelectedPastaType] = useState<string>('');
   const [selectedSauce, setSelectedSauce] = useState<string>('');
   const [selectedSpecialRequest, setSelectedSpecialRequest] = useState<string>('Standard');
-  const [quantity, setQuantity] = useState<number>(1);
-  const [currentStep, setCurrentStep] = useState<'size' | 'specialRequest' | 'ingredients' | 'extras' | 'complete'>('size');
-  const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
-
-  // Get dynamic pricing for special requests based on pizza size
-  const getSpecialRequestPrice = useCallback((requestName: string, size?: PizzaSize) => {
-    if (requestName === 'Standard') return 0;
-    
-    const basePrices = {
-      'Käserand': { medium: 2.00, large: 2.50, family: 3.00, mega: 3.00 },
-      'Americanstyle': { medium: 1.50, large: 2.00, family: 2.50, mega: 2.50 },
-      'als Calzone': { medium: 1.00, large: 1.50, family: 2.00, mega: 2.00 }
-    };
-    
-    const sizeKey = size?.name.toLowerCase() || 'medium';
-    return basePrices[requestName]?.[sizeKey] || 0;
-  }, []);
-
-  // Get dynamic special requests with current pricing
-  const getDynamicSpecialRequests = useCallback(() => {
-    return [
-      { name: 'Standard', price: 0, description: 'Normale Pizza' },
-      { 
-        name: 'Käserand', 
-        price: getSpecialRequestPrice('Käserand', selectedSize), 
-        description: `Mit Käserand (+${getSpecialRequestPrice('Käserand', selectedSize).toFixed(2).replace('.', ',')}€)` 
-      },
-      { 
-        name: 'Americanstyle', 
-        price: getSpecialRequestPrice('Americanstyle', selectedSize), 
-        description: `Amerikanischer Stil (+${getSpecialRequestPrice('Americanstyle', selectedSize).toFixed(2).replace('.', ',')}€)` 
-      },
-      { 
-        name: 'als Calzone', 
-        price: getSpecialRequestPrice('als Calzone', selectedSize), 
-        description: `Als gefüllte Calzone (+${getSpecialRequestPrice('als Calzone', selectedSize).toFixed(2).replace('.', ',')}€)` 
-      }
-    ];
-  }, [selectedSize, getSpecialRequestPrice]);
 
   const resetSelections = useCallback(() => {
     setSelectedSize(item.sizes ? item.sizes[0] : undefined);
@@ -99,833 +52,349 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
     setSelectedPastaType('');
     setSelectedSauce('');
     setSelectedSpecialRequest('Standard');
-  }, [item]);
+  }, [item.sizes]);
 
-  React.useEffect(() => {
-    if (isOpen) {
-      resetSelections();
-      setCurrentStep('size');
-    }
-  }, [isOpen, resetSelections]);
+  const handleClose = useCallback(() => {
+    resetSelections();
+    onClose();
+  }, [resetSelections, onClose]);
 
-  const handleIngredientToggle = useCallback((ingredient: string) => {
-    setSelectedIngredients(prev => {
-      if (ingredient === 'ohne Zutat') {
-        return prev.includes(ingredient) ? [] : [ingredient];
+  const calculatePrice = useMemo(() => {
+    let basePrice = selectedSize ? selectedSize.price : item.price;
+    const extrasPrice = selectedExtras.length * 1.50;
+    
+    let specialRequestPrice = 0;
+    if (selectedSpecialRequest && selectedSpecialRequest !== 'Standard') {
+      const specialRequest = pizzaSpecialRequests.find(req => req.name === selectedSpecialRequest);
+      if (specialRequest) {
+        specialRequestPrice = specialRequest.price;
       }
-      
-      const filtered = prev.filter(ing => ing !== 'ohne Zutat');
-      return filtered.includes(ingredient)
-        ? filtered.filter(ing => ing !== ingredient)
-        : [...filtered, ingredient];
-    });
+    }
+    
+    return basePrice + extrasPrice + specialRequestPrice;
+  }, [selectedSize, item.price, selectedExtras.length, selectedSpecialRequest]);
+
+  const handleAddToOrder = useCallback(() => {
+    onAddToOrder(
+      item,
+      selectedSize,
+      selectedIngredients,
+      selectedExtras,
+      selectedPastaType || undefined,
+      selectedSauce || undefined,
+      selectedSpecialRequest
+    );
+    handleClose();
+  }, [
+    item,
+    selectedSize,
+    selectedIngredients,
+    selectedExtras,
+    selectedPastaType,
+    selectedSauce,
+    selectedSpecialRequest,
+    onAddToOrder,
+    handleClose
+  ]);
+
+  const toggleIngredient = useCallback((ingredient: string) => {
+    setSelectedIngredients(prev => 
+      prev.includes(ingredient)
+        ? prev.filter(i => i !== ingredient)
+        : [...prev, ingredient]
+    );
   }, []);
 
-  const handleExtraToggle = useCallback((extra: string) => {
-    setSelectedExtras(prev =>
+  const toggleExtra = useCallback((extra: string) => {
+    setSelectedExtras(prev => 
       prev.includes(extra)
         ? prev.filter(e => e !== extra)
         : [...prev, extra]
     );
   }, []);
 
-  const handleAddToOrder = useCallback(() => {
-    // Add multiple items based on quantity
-    for (let i = 0; i < quantity; i++) {
-      onAddToOrder(item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest);
-    }
-    onClose();
-  }, [item, selectedSize, selectedIngredients, selectedExtras, selectedPastaType, selectedSauce, selectedSpecialRequest, quantity, onAddToOrder, onClose]);
-
-  const handleSizeSelection = useCallback((size: PizzaSize) => {
-    setSelectedSize(size);
-  }, [item.isPizza, item.isWunschPizza]);
-
-  const handleSpecialRequestSelection = useCallback((request: string) => {
-    setSelectedSpecialRequest(request);
-  }, []);
-
-  const handleBackToSize = useCallback(() => {
-    setCurrentStep('size');
-  }, []);
-
-  const getCurrentPrice = useCallback(() => {
-    let price = selectedSize ? selectedSize.price : item.price;
-    price += selectedExtras.length * 1.50;
-    
-    // Add special request price
-    if (selectedSpecialRequest && selectedSpecialRequest !== 'Standard') {
-      price += getSpecialRequestPrice(selectedSpecialRequest, selectedSize);
-    }
-    
-    return price;
-  }, [selectedSize, selectedExtras, selectedSpecialRequest, item.price, getSpecialRequestPrice]);
-
-  const getTotalPrice = useCallback(() => {
-    const basePrice = selectedSize ? selectedSize.price : item.price;
-    const extrasPrice = selectedExtras.length * 1.50;
-    const specialRequestPrice = selectedSpecialRequest && selectedSpecialRequest !== 'Standard' 
-      ? getSpecialRequestPrice(selectedSpecialRequest, selectedSize) 
-      : 0;
-    
-    return (basePrice + extrasPrice + specialRequestPrice) * quantity;
-  }, [getCurrentPrice, quantity]);
-
-  const canAddToOrder = useCallback(() => {
-    // Check if pasta type is required and selected
-    if (item.isPasta && !selectedPastaType) {
-      return false;
-    }
-    
-    // Check if sauce is required and selected
-    const needsSauceSelection = (item.isSpezialitaet && ![81, 82].includes(item.id)) || 
-                               (item.id >= 568 && item.id <= 573 && item.isSpezialitaet) ||
-                               item.isBeerSelection;
-    if (needsSauceSelection && !selectedSauce) {
-      return false;
-    }
-    
-    // Check Wunsch Pizza ingredients
-    if (item.isWunschPizza) {
-      const validIngredients = selectedIngredients.filter(ing => ing !== 'ohne Zutat');
-      if (selectedIngredients.includes('ohne Zutat')) {
-        return validIngredients.length === 0;
-      }
-      return validIngredients.length === 4;
-    }
-    
-    return true;
-  }, [item, selectedPastaType, selectedSauce, selectedIngredients]);
-
   if (!isOpen) return null;
 
-  // For simple pizzas (not Wunsch Pizza), show simplified modal
-  if (item.isPizza && !item.isWunschPizza && !item.isPasta && !item.isSpezialitaet && !item.isBeerSelection) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="p-4 sm:p-6">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {item.name}
-                </h3>
-                <p className="text-gray-600 mt-2 text-sm">
-                  ab {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
-                </p>
-                {item.description && (
-                  <p className="text-gray-600 mt-2 text-sm">{item.description}</p>
-                )}
-              </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-              >
-                ×
-              </button>
-            </div>
+  // Determine if this is a burger item
+  const isBurger = item.name.toLowerCase().includes('burger');
 
-            <div className="space-y-4 overflow-y-auto flex-1">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900">{item.name}:</h4>
-                  <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-                    1 Pflichtfeld
-                  </span>
-                </div>
-
-                {/* Size Selection */}
-                {item.sizes && item.sizes.length > 0 && (
-                  <div className="space-y-2">
-                    {item.sizes.map((size) => (
-                      <label
-                        key={size.name}
-                        className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedSize?.name === size.name
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-gray-200 hover:border-orange-300'
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            name="size"
-                            checked={selectedSize?.name === size.name}
-                            onChange={() => handleSizeSelection(size)}
-                            className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                          />
-                          <div className="ml-3">
-                            <div className="font-medium text-gray-900">{size.name}, {size.description}</div>
-                          </div>
-                        </div>
-                        <span className="font-bold text-gray-900">
-                          {size.price.toFixed(2).replace('.', ',')} €
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Minus className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleAddToOrder}
-                  disabled={!canAddToOrder()}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                    canAddToOrder()
-                      ? 'bg-orange-500 text-white hover:bg-orange-600'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <span>Hinzufügen</span>
-                  <span className="font-bold">
-                    {getTotalPrice().toFixed(2).replace('.', ',')} €
-                  </span>
-                </button>
-              </div>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg sm:text-xl font-bold truncate">{item.name}</h3>
+            {item.description && (
+              <p className="text-sm sm:text-base opacity-90 mt-1 line-clamp-2">{item.description}</p>
+            )}
           </div>
+          <button
+            onClick={handleClose}
+            className="ml-4 p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors flex-shrink-0"
+            aria-label="Schließen"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
         </div>
-      </div>
-    );
-  }
 
-  // Wunsch Pizza size selection step
-  if (item.isWunschPizza && currentStep === 'size') {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="p-4 sm:p-6">
-            <div className="flex justify-between items-start mb-6">
+        {/* Content */}
+        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <div className="space-y-6">
+            {/* Size Selection for items with sizes */}
+            {item.sizes && item.sizes.length > 0 && (
               <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {item.name}
-                  <span className="text-sm text-gray-500 block">Schritt 1: Größe wählen</span>
-                </h3>
-                {item.description && (
-                  <p className="text-gray-600 mt-2 text-sm">{item.description}</p>
-                )}
-              </div>
-              <div className="text-right">
-                {selectedSize ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-2xl font-bold text-orange-600">
-                      {getTotalPrice().toFixed(2).replace('.', ',')} €
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {selectedSize.name} - {selectedSize.description} × {quantity}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-right">
-                    <span className="text-sm text-gray-500 block">ab</span>
-                    <span className="text-xl font-bold text-orange-600">
-                      {Math.min(...(item.sizes?.map(s => s.price) || [item.price])).toFixed(2).replace('.', ',')} €
-                    </span>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-4 overflow-y-auto flex-1">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900">{item.name}:</h4>
-                  <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-                    1 Pflichtfeld
-                  </span>
-                </div>
-
-                {/* Size Selection */}
-                {item.sizes && item.sizes.length > 0 && (
-                  <div className="space-y-2">
-                    {item.sizes.map((size) => (
-                      <label
-                        key={size.name}
-                        className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedSize?.name === size.name
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-gray-200 hover:border-orange-300'
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <input
-                            type="radio"
-                            name="size"
-                            checked={selectedSize?.name === size.name}
-                            onChange={() => setSelectedSize(size)}
-                            className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                          />
-                          <div className="ml-3">
-                            <div className="font-medium text-gray-900">{size.name}, {size.description}</div>
-                          </div>
-                        </div>
-                        <span className="font-bold text-gray-900">
-                          {size.price.toFixed(2).replace('.', ',')} €
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Minus className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (item.isPizza || item.isWunschPizza) {
-                      setCurrentStep('specialRequest');
-                    } else {
-                      setCurrentStep('complete');
-                    }
-                  }}
-                  disabled={!selectedSize}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                    selectedSize
-                      ? 'bg-orange-500 text-white hover:bg-orange-600'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <span>Weiter</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Special request selection step for pizzas
-  if ((item.isPizza || item.isWunschPizza) && currentStep === 'specialRequest') {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col">
-          <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {item.name}
-                  <span className="text-sm text-gray-500 block">
-                    Schritt 2: Dein Sonderwunsch
-                  </span>
-                </h3>
-                <p className="text-gray-600 mt-2 text-sm">
-                  Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-bold text-orange-600">
-                    {getTotalPrice().toFixed(2).replace('.', ',')} €
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {selectedSize?.name} - {selectedSize?.description} × {quantity}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-900">Dein Sonderwunsch:</h4>
-                <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-                  1 Pflichtfeld
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                {getDynamicSpecialRequests().map((request) => (
-                  <label
-                    key={request.name}
-                    className={`flex items-center justify-between p-1.5 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedSpecialRequest === request.name
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 hover:border-orange-300'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="specialRequest"
-                        checked={selectedSpecialRequest === request.name}
-                        onChange={() => handleSpecialRequestSelection(request.name)}
-                        className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                      />
-                      <div className="ml-1.5">
-                        <div className="font-medium text-gray-900">{request.name}</div>
-                        {request.description && (
-                          <div className="text-sm text-gray-500">{request.description}</div>
-                        )}
-                      </div>
-                    </div>
-                    {request.price > 0 && (
-                      <span className="font-bold text-gray-900">
-                        +{request.price.toFixed(2).replace('.', ',')} €
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4">
-              <button
-                onClick={handleBackToSize}
-                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
-              >
-                Zurück
-              </button>
-
-              <button
-                onClick={() => setCurrentStep(item.isWunschPizza ? 'ingredients' : 'extras')}
-                disabled={!selectedSpecialRequest}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all text-sm sm:text-base ${
-                  selectedSpecialRequest
-                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <span>Weiter</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Ingredients selection step for Wunsch Pizza
-  if (item.isWunschPizza && currentStep === 'ingredients') {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full h-[90vh] max-h-[600px] overflow-hidden flex flex-col">
-          <div className="flex flex-col h-full">
-            {/* Header - Fixed */}
-            <div className="flex justify-between items-start mb-4 p-3 sm:p-4 md:p-6 pb-0 flex-shrink-0">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {item.name}
-                  <span className="text-sm text-gray-500 block">Schritt 3: 4 Zutaten wählen:</span>
-                </h3>
-                <p className="text-gray-600 mt-2 text-sm">
-                  Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
-                </p>
-                {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-                  <p className="text-gray-600 mt-1 text-sm">
-                    Sonderwunsch: {selectedSpecialRequest}
-                  </p>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-bold text-orange-600">
-                    {getTotalPrice().toFixed(2).replace('.', ',')} €
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {selectedSize?.name} - {selectedSize?.description} × {quantity}
-                  </span>
-                  {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-                    <span className="text-xs text-blue-600">
-                      {selectedSpecialRequest}: +{(getSpecialRequestPrice(selectedSpecialRequest, selectedSize) * quantity).toFixed(2).replace('.', ',')}€
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Content Area - Scrollable */}
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-3 sm:px-4 md:px-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-900">4 Zutaten wählen:</h4>
-                <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-sm">
-                  1 Pflichtfeld
-                </span>
-              </div>
-              
-              <div className="space-y-2 overflow-y-auto flex-1 pr-2 ingredients-scroll">
-                {/* Show first 3 ingredients or all if expanded */}
-                {(showAllIngredients ? wunschPizzaIngredients : wunschPizzaIngredients.slice(0, 3)).map((ingredient) => {
-                  const isSelected = selectedIngredients.includes(ingredient.name);
-                  const hasOhneZutat = selectedIngredients.includes('ohne Zutat');
-                  const validIngredients = selectedIngredients.filter(ing => ing !== 'ohne Zutat');
-                  const canSelect = ingredient.name === 'ohne Zutat' 
-                    ? validIngredients.length === 0
-                    : !hasOhneZutat && (isSelected || validIngredients.length < 4);
-                  
-                  return (
-                    <label
-                      key={ingredient.name}
-                      className={`flex items-center justify-between p-1.5 rounded-lg border-2 cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-orange-500 bg-orange-50'
-                          : !canSelect
-                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'border-gray-200 hover:border-orange-300'
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  {isBurger ? 'Patty-Größe wählen *' : 'Größe wählen *'}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {item.sizes.map((size) => (
+                    <button
+                      key={size.name}
+                      onClick={() => setSelectedSize(size)}
+                      className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-left ${
+                        selectedSize?.name === size.name
+                          ? 'border-orange-500 bg-orange-50 text-orange-900'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }`}
                     >
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleIngredientToggle(ingredient.name)}
-                          disabled={!canSelect}
-                          className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                        />
-                        <div className="ml-1.5">
-                          <div className="font-medium text-gray-900">{ingredient.name}</div>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm sm:text-base">{size.name}</div>
+                          {size.description && (
+                            <div className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
+                              {size.description}
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-2 font-bold text-sm sm:text-base text-orange-600 flex-shrink-0">
+                          {size.price.toFixed(2).replace('.', ',')} €
                         </div>
                       </div>
-                    </label>
-                  );
-                })}
-                
-                {/* Show more/less button */}
-                {!showAllIngredients && wunschPizzaIngredients.length > 3 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAllIngredients(true);
-                      // Force scrollbar to be visible immediately
-                      setTimeout(() => {
-                        const scrollContainer = document.querySelector('.ingredients-scroll');
-                        if (scrollContainer) {
-                          scrollContainer.style.overflowY = 'scroll';
-                        }
-                      }, 0);
-                    }}
-                    className="w-full p-0.5 text-center text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg border-2 border-dashed border-orange-300 hover:border-orange-400 transition-all text-sm font-medium"
-                  >
-                    Mehr anzeigen ({wunschPizzaIngredients.length - 3} weitere Zutaten)
-                  </button>
-                )}
-                
-                {showAllIngredients && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAllIngredients(false);
-                      // Reset scrollbar behavior
-                      setTimeout(() => {
-                        const scrollContainer = document.querySelector('.ingredients-scroll');
-                        if (scrollContainer) {
-                          scrollContainer.style.overflowY = 'auto';
-                        }
-                      }, 0);
-                    }}
-                    className="w-full p-0.5 text-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 transition-all text-sm font-medium"
-                  >
-                    Weniger anzeigen
-                  </button>
-                )}
+                    </button>
+                  ))}
+                </div>
               </div>
-              
-              {/* Status Info - Fixed */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-1 mt-2.5 flex-shrink-0">
-                <p className="text-sm text-blue-800 font-medium">
-                  Ausgewählt: {selectedIngredients.includes('ohne Zutat') ? '0 (ohne Zutat)' : `${selectedIngredients.length} / 4`}
-                </p>
-                {!selectedIngredients.includes('ohne Zutat') && selectedIngredients.length < 4 && (
-                  <p className="text-xs text-blue-600 mt-0.5">
-                    Noch {4 - selectedIngredients.length} Zutat{4 - selectedIngredients.length !== 1 ? 'en' : ''} wählen
-                  </p>
-                )}
-              </div>
-            </div>
+            )}
 
-            {/* Bottom Buttons - Fixed */}
-            <div className="flex items-center justify-between p-3 sm:p-4 md:p-6 pt-3 border-t flex-shrink-0 bg-white">
-              <button
-                onClick={() => setCurrentStep('specialRequest')}
-                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
-              >
-                Zurück
-              </button>
-
-              <button
-                onClick={() => setCurrentStep('extras')}
-                disabled={!canAddToOrder()}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition-all text-sm sm:text-base ${
-                  canAddToOrder()
-                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <span>Weiter</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Extras selection step for pizzas
-  if ((item.isPizza || item.isWunschPizza) && currentStep === 'extras') {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-        <div className="bg-white rounded-xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col">
-          <div className="p-3 sm:p-4 md:p-6 flex-1 flex flex-col">
-            <div className="flex justify-between items-start mb-6">
+            {/* Wunsch Pizza Ingredients Selection */}
+            {item.isWunschPizza && (
               <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {item.name}
-                  <span className="text-sm text-gray-500 block">
-                    {item.isWunschPizza ? 'Schritt 4: Extras hinzufügen:' : 'Extras hinzufügen:'}
-                  </span>
-                </h3>
-                <p className="text-gray-600 mt-2 text-sm">
-                  Größe: {selectedSize?.name} {selectedSize?.description && `- ${selectedSize.description}`}
-                </p>
-                {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-                  <p className="text-gray-600 mt-1 text-sm">
-                    Sonderwunsch: {selectedSpecialRequest}
-                  </p>
-                )}
-                {item.isWunschPizza && selectedIngredients && selectedIngredients.length > 0 && (
-                  <p className="text-gray-600 mt-1 text-sm">
-                    Zutaten: {selectedIngredients.join(', ')}
-                  </p>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-bold text-orange-600">
-                    {getTotalPrice().toFixed(2).replace('.', ',')} €
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {selectedSize?.name} - {selectedSize?.description} × {quantity}
-                  </span>
-                  {selectedSpecialRequest && selectedSpecialRequest !== 'Standard' && (
-                    <span className="text-xs text-blue-600">
-                      {selectedSpecialRequest}: +{(getSpecialRequestPrice(selectedSpecialRequest, selectedSize) * quantity).toFixed(2).replace('.', ',')}€
-                    </span>
-                  )}
-                  {selectedExtras.length > 0 && (
-                    <span className="text-xs text-green-600">
-                      Extras: +{(selectedExtras.length * 1.50 * quantity).toFixed(2).replace('.', ',')}€
-                    </span>
-                  )}
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  4 Zutaten wählen * (aktuell: {selectedIngredients.length}/4)
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto ingredients-scroll">
+                  {[
+                    'Ananas', 'Artischocken', 'Barbecuesauce', 'Brokkoli', 'Champignons frisch',
+                    'Chili-Cheese-Soße', 'Edamer', 'Formfleisch-Vorderschinken', 'Gewürzgurken',
+                    'Gorgonzola', 'Gyros', 'Hirtenkäse', 'Hähnchenbrust', 'Jalapeños',
+                    'Knoblauchwurst', 'Mais', 'Milde Peperoni', 'Mozzarella', 'Oliven',
+                    'Paprika', 'Parmaschinken', 'Peperoni, scharf', 'Remoulade', 'Rindermett',
+                    'Rindersalami', 'Rucola', 'Röstzwiebeln', 'Sauce Hollandaise', 'Spiegelei',
+                    'Spinat', 'Tomaten', 'Würstchen', 'Zwiebeln', 'ohne Zutat'
+                  ].map((ingredient) => (
+                    <button
+                      key={ingredient}
+                      onClick={() => toggleIngredient(ingredient)}
+                      disabled={!selectedIngredients.includes(ingredient) && selectedIngredients.length >= 4}
+                      className={`p-2 sm:p-3 rounded-lg border text-xs sm:text-sm transition-all text-center ${
+                        selectedIngredients.includes(ingredient)
+                          ? 'border-green-500 bg-green-50 text-green-900 font-medium'
+                          : selectedIngredients.length >= 4
+                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="break-words leading-tight">{ingredient}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 text-2xl font-bold ml-4"
-              >
-                ×
-              </button>
-            </div>
+            )}
 
-            <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-900">Extras hinzufügen:</h4>
-                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
-                  Optional
-                </span>
+            {/* Pizza Extras Selection */}
+            {(item.isPizza || item.isWunschPizza) && (
+              <div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  Extras hinzufügen (je +1,50€)
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto ingredients-scroll">
+                  {pizzaExtras.map((extra) => (
+                    <button
+                      key={extra.name}
+                      onClick={() => toggleExtra(extra.name)}
+                      className={`p-2 sm:p-3 rounded-lg border text-xs sm:text-sm transition-all text-center ${
+                        selectedExtras.includes(extra.name)
+                          ? 'border-blue-500 bg-blue-50 text-blue-900 font-medium'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="break-words leading-tight">{extra.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              
-              <div className="space-y-2 max-h-40 overflow-y-auto ingredients-scroll">
-                {pizzaExtras.map((extra) => (
-                  <label
-                    key={extra.name}
-                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedExtras.includes(extra.name)
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 hover:border-orange-300'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedExtras.includes(extra.name)}
-                        onChange={() => handleExtraToggle(extra.name)}
-                        className="w-5 h-5 text-orange-500 border-gray-300 focus:ring-orange-500"
-                      />
-                      <div className="ml-3">
-                        <div className="font-medium text-gray-900">{extra.name}</div>
+            )}
+
+            {/* Pizza Special Requests */}
+            {(item.isPizza || item.isWunschPizza) && (
+              <div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  Sonderwunsch
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {pizzaSpecialRequests.map((request) => (
+                    <button
+                      key={request.name}
+                      onClick={() => setSelectedSpecialRequest(request.name)}
+                      className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-left ${
+                        selectedSpecialRequest === request.name
+                          ? 'border-purple-500 bg-purple-50 text-purple-900'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm sm:text-base">{request.name}</div>
+                          {request.description && (
+                            <div className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
+                              {request.description}
+                            </div>
+                          )}
+                        </div>
+                        {request.price > 0 && (
+                          <div className="ml-2 font-bold text-sm sm:text-base text-purple-600 flex-shrink-0">
+                            +{request.price.toFixed(2).replace('.', ',')} €
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <span className="font-bold text-gray-900">
-                      +{extra.price.toFixed(2).replace('.', ',')} €
-                    </span>
-                  </label>
-                ))}
-              </div>
-              
-              {selectedExtras.length > 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-sm text-green-800 font-medium">
-                    Extras: +{(selectedExtras.length * 1.50).toFixed(2).replace('.', ',')} €
-                  </p>
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t flex-shrink-0 mt-4">
-              <button
-                onClick={() => setCurrentStep(item.isWunschPizza ? 'ingredients' : 'specialRequest')}
-                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all text-sm sm:text-base"
-              >
-                Zurück
-              </button>
-
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Minus className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleAddToOrder}
-                  className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all bg-orange-500 text-white hover:bg-orange-600 text-sm sm:text-base"
-                >
-                  Hinzufügen
-                </button>
               </div>
-            </div>
+            )}
+
+            {/* Pasta Type Selection */}
+            {item.isPasta && (
+              <div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  Nudelsorte wählen *
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {pastaTypes.map((pastaType) => (
+                    <button
+                      key={pastaType.name}
+                      onClick={() => setSelectedPastaType(pastaType.name)}
+                      className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-center ${
+                        selectedPastaType === pastaType.name
+                          ? 'border-yellow-500 bg-yellow-50 text-yellow-900 font-semibold'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <span className="text-sm sm:text-base">{pastaType.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sauce Selection for Spezialitäten */}
+            {item.isSpezialitaet && (
+              <div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  Soße wählen *
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {sauceTypes.map((sauce) => (
+                    <button
+                      key={sauce.name}
+                      onClick={() => setSelectedSauce(sauce.name)}
+                      className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-center ${
+                        selectedSauce === sauce.name
+                          ? 'border-red-500 bg-red-50 text-red-900 font-semibold'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <span className="text-sm sm:text-base">{sauce.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sauce Selection for Salads */}
+            {item.name.toLowerCase().includes('salat') && (
+              <div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  Dressing wählen *
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {saladSauceTypes.map((sauce) => (
+                    <button
+                      key={sauce.name}
+                      onClick={() => setSelectedSauce(sauce.name)}
+                      className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-center ${
+                        selectedSauce === sauce.name
+                          ? 'border-green-500 bg-green-50 text-green-900 font-semibold'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <span className="text-sm sm:text-base break-words">{sauce.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Beer Selection */}
+            {item.isBeerSelection && (
+              <div>
+                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                  Biersorte wählen *
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {beerTypes.map((beer) => (
+                    <button
+                      key={beer.name}
+                      onClick={() => setSelectedSauce(beer.name)}
+                      className={`p-3 sm:p-4 rounded-lg border-2 transition-all text-center ${
+                        selectedSauce === beer.name
+                          ? 'border-amber-500 bg-amber-50 text-amber-900 font-semibold'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }`}
+                    >
+                      <span className="text-sm sm:text-base">{beer.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-    );
-  }
-  // Original complex modal for Wunsch Pizza, Pasta, etc.
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-4 sm:p-6">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">
-                {item.name}
-              </h3>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-            >
-              ×
-            </button>
-          </div>
 
-          <div className="space-y-4 overflow-y-auto flex-1">
+        {/* Footer */}
+        <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-base sm:text-lg font-semibold text-gray-900">Gesamtpreis:</span>
+            <span className="text-lg sm:text-xl font-bold text-orange-600">
+              {calculatePrice.toFixed(2).replace('.', ',')} €
+            </span>
           </div>
-
-          <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
+          
+          <div className="flex gap-3">
             <button
-              onClick={onClose}
-              className="px-6 py-3 rounded-lg font-semibold bg-gray-500 text-white hover:bg-gray-600 transition-all"
+              onClick={handleClose}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm sm:text-base"
             >
               Abbrechen
             </button>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                >
-                  <Minus className="w-5 h-5 text-gray-600" />
-                </button>
-                <span className="text-xl font-semibold text-gray-900 min-w-[2rem] text-center">
-                  {quantity}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-                >
-                  <Plus className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-
-              <button
-                onClick={handleAddToOrder}
-                disabled={!canAddToOrder()}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                  canAddToOrder()
-                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <span>Hinzufügen</span>
-                <span className="font-bold">
-                  {getTotalPrice().toFixed(2).replace('.', ',')} €
-                </span>
-              </button>
-            </div>
+            <button
+              onClick={handleAddToOrder}
+              className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold flex items-center justify-center gap-2 text-sm sm:text-base"
+            >
+              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+              Hinzufügen
+            </button>
           </div>
         </div>
       </div>
@@ -933,184 +402,101 @@ const ItemModal: React.FC<ItemModalProps> = memo(({ item, isOpen, onClose, onAdd
   );
 });
 
-const MenuSection: React.FC<MenuSectionProps> = ({ title, description, subTitle, items, bgColor = 'bg-orange-500', onAddToOrder }) => {
+const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subTitle, items, bgColor, onAddToOrder }) => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
 
   const handleItemClick = useCallback((item: MenuItem) => {
-    // Items that need configuration
-    const needsConfiguration = item.sizes || 
-                              item.isWunschPizza || 
-                              item.isPizza || 
-                              item.isPasta ||
-                              item.isBeerSelection ||
-                              (item.isSpezialitaet && ![81, 82].includes(item.id)) || // Exclude Gyros Hollandaise and Gyros Topf
-                              (item.id >= 568 && item.id <= 573 && item.isSpezialitaet); // Salads
+    // Check if item needs customization
+    const needsCustomization = 
+      (item.sizes && item.sizes.length > 0) ||
+      item.isWunschPizza ||
+      item.isPizza ||
+      item.isPasta ||
+      item.isSpezialitaet ||
+      item.isBeerSelection ||
+      item.name.toLowerCase().includes('salat');
 
-    if (needsConfiguration) {
+    if (needsCustomization) {
       setSelectedItem(item);
     } else {
+      // Add directly to cart for simple items
       onAddToOrder(item);
     }
   }, [onAddToOrder]);
 
-  const closeModal = useCallback(() => {
+  const handleCloseModal = useCallback(() => {
     setSelectedItem(null);
   }, []);
 
   if (!items || items.length === 0) {
-    return (
-      <section className="mb-8">
-        <div className="text-center py-8">
-          <p className="text-gray-500">Keine Artikel in dieser Kategorie verfügbar.</p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
-    <section className="mb-8">
-      <div className={`${bgColor} text-white p-3 sm:p-4 rounded-t-xl`}>
-        <div className="flex items-center gap-2 mb-1">
-          <ChefHat className="w-4 h-4 sm:w-5 sm:h-5" />
-          <h2 className="text-sm sm:text-sm md:text-base font-bold">{title}</h2>
-        </div>
-        {description && (
-          <p className="text-xs sm:text-sm opacity-90 leading-relaxed">{description}</p>
-        )}
+    <section className="mb-8 sm:mb-12">
+      <div className={`${bgColor} text-white p-4 sm:p-6 rounded-t-xl`}>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{title}</h2>
         {subTitle && (
-          <p className="text-xs sm:text-sm opacity-80 mt-1 italic">{subTitle}</p>
+          <p className="text-sm sm:text-base opacity-90 mb-2">{subTitle}</p>
+        )}
+        {description && (
+          <p className="text-sm sm:text-base opacity-90">{description}</p>
         )}
       </div>
 
       <div className="bg-white rounded-b-xl shadow-lg overflow-hidden">
-        <div className="divide-y divide-gray-200/60">
-          {items.map((item, index) => (
+        <div className="divide-y divide-gray-100">
+          {items.map((item) => (
             <div
-              key={`${item.id}-${index}`}
-              className="p-2 sm:p-3 hover:bg-gradient-to-r hover:from-gray-50 hover:to-orange-50/30 transition-all duration-200 group relative"
+              key={item.id}
+              className="p-4 sm:p-6 hover:bg-gray-50 transition-colors"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start gap-2 sm:gap-3 mb-1 sm:mb-2">
-                    <span className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-sm sm:text-base font-bold">
-                      {item.number}
+                  <div className="flex items-start gap-3 mb-2">
+                    <span className="bg-orange-100 text-orange-800 text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
+                      Nr. {item.number}
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight group-hover:text-orange-600 transition-colors">
-                        {item.name}
-                      </h3>
-                      {item.description && (
-                        <p className="text-gray-600 text-xs sm:text-sm mt-1 leading-relaxed">
-                          {item.description}
-                        </p>
-                      )}
-                      {item.allergens && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          <span className="font-medium">Allergene:</span> {item.allergens}
-                        </p>
-                      )}
-                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">
+                      {item.name}
+                    </h3>
                   </div>
+                  
+                  {item.description && (
+                    <p className="text-sm sm:text-base text-gray-600 mb-2 leading-relaxed">
+                      {item.description}
+                    </p>
+                  )}
+                  
+                  {item.allergens && (
+                    <p className="text-xs text-gray-500">
+                      Allergene: {item.allergens}
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <div className="text-right">
-                    {item.sizes && item.sizes.length > 0 ? (
-                      <div className="space-y-1">
-                        <div className="text-xs text-gray-600">ab</div>
-                        <div className="text-base sm:text-lg font-bold text-orange-600">
-                          {Math.min(...item.sizes.map(s => s.price)).toFixed(2).replace('.', ',')} €
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-base sm:text-lg font-bold text-orange-600 relative">
-                        {/* Show original price crossed out if there's a special offer */}
-                        {((item.id === 84 && new Date().getDay() === 3) || 
-                          ([547, 548].includes(item.id) && new Date().getDay() === 4)) && (
-                          <div className="text-sm text-gray-500 line-through">
-                            {item.id === 84 ? '14,90' : '12,90'} €
-                          </div>
-                        )}
-                        <div className={((item.id === 84 && new Date().getDay() === 3) || 
-                          ([547, 548].includes(item.id) && new Date().getDay() === 4)) 
-                          ? 'text-red-600 font-extrabold animate-pulse' : ''}>
-                          {item.price.toFixed(2).replace('.', ',')} €
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                  {item.sizes && item.sizes.length > 0 ? (
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600 mb-1">ab</p>
+                      <p className="text-lg sm:text-xl font-bold text-orange-600">
+                        {Math.min(...item.sizes.map(s => s.price)).toFixed(2).replace('.', ',')} €
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-lg sm:text-xl font-bold text-orange-600">
+                      {item.price.toFixed(2).replace('.', ',')} €
+                    </p>
+                  )}
 
                   <button
-                    className="flex items-center gap-1.5 bg-orange-500 text-white px-2 sm:px-3 py-1.5 rounded-lg hover:bg-orange-600 transition-all transform hover:scale-105 text-xs sm:text-sm font-medium shadow-md hover:shadow-lg"
                     onClick={() => handleItemClick(item)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center gap-2 text-sm sm:text-base"
                   >
-                    <Plus className="w-3 h-3" />
-                    <span className="hidden sm:inline">Hinzufügen</span>
+                    <Plus className="w-4 h-4" />
+                    Hinzufügen
                   </button>
                 </div>
-              </div>
-
-              {/* Configuration indicators */}
-              <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
-                {/* Special offer indicators */}
-                {item.id === 84 && new Date().getDay() === 3 && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded-full animate-pulse">
-                    🔥 RIPPCHEN-TAG SPEZIAL
-                  </span>
-                )}
-                {[546, 547, 548, 549].includes(item.id) && new Date().getDay() === 4 && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded-full animate-pulse">
-                    🔥 SCHNITZEL-TAG SPEZIAL
-                  </span>
-                )}
-                {item.sizes && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    <Star className="w-3 h-3" />
-                    Größen verfügbar
-                  </span>
-                )}
-                {item.isWunschPizza && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
-                    <ChefHat className="w-3 h-3" />
-                    4 Zutaten wählbar
-                  </span>
-                )}
-                {(item.isPizza && !item.isWunschPizza) && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
-                    <Plus className="w-3 h-3" />
-                    Extras verfügbar
-                  </span>
-                )}
-                {item.isWunschPizza && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
-                    <Plus className="w-3 h-3" />
-                    Extras verfügbar
-                  </span>
-                )}
-                {item.isPasta && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                    <Clock className="w-3 h-3" />
-                    Nudelsorte wählbar
-                  </span>
-                )}
-                {item.isSpezialitaet && ![81, 82].includes(item.id) && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
-                    <ChefHat className="w-3 h-3" />
-                    Soße wählbar
-                  </span>
-                )}
-                {item.id >= 568 && item.id <= 573 && item.isSpezialitaet && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-xs rounded-full">
-                    <ChefHat className="w-3 h-3" />
-                    Dressing wählbar
-                  </span>
-                )}
-                {item.isBeerSelection && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">
-                    <ChefHat className="w-3 h-3" />
-                    Bier wählbar
-                  </span>
-                )}
               </div>
             </div>
           ))}
@@ -1121,12 +507,15 @@ const MenuSection: React.FC<MenuSectionProps> = ({ title, description, subTitle,
         <ItemModal
           item={selectedItem}
           isOpen={!!selectedItem}
-          onClose={closeModal}
+          onClose={handleCloseModal}
           onAddToOrder={onAddToOrder}
         />
       )}
     </section>
   );
-};
+});
+
+MenuSection.displayName = 'MenuSection';
+ItemModal.displayName = 'ItemModal';
 
 export default MenuSection;
