@@ -468,6 +468,33 @@ const MenuSection: React.FC<MenuSectionProps> = memo(({ title, description, subT
                     </p>
                   )}
                   
+                  {/* Sauce selectable indicator */}
+                  {(item.isSpezialitaet || item.name.toLowerCase().includes('salat') || item.isBeerSelection) && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                        🥄 Soße wählbar
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Pizza extras indicator */}
+                  {(item.isPizza || item.isWunschPizza) && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                        ➕ Extras wählbar
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Pasta type indicator */}
+                  {item.isPasta && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                        🍝 Nudelsorte wählbar
+                      </span>
+                    </div>
+                  )}
+                  
                   {item.allergens && (
                     <p className="text-xs text-gray-500">
                       Allergene: {item.allergens}
