@@ -494,7 +494,7 @@ function App() {
               {renderMenuSection(
                 MENU_SECTIONS.DOENER,
                 'Spezialitäten', 
-                undefined,
+                'Soße wählbar',
                 donerDishes
               )}
 
