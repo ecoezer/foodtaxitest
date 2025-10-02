@@ -5,7 +5,11 @@ interface AdminLoginProps {
   onLogin: () => void;
 }
 
-const LOCKOUT_DURATION = 5 * 60 * 1000;
+const LOCKOUT_DURATIONS = [
+  5 * 60 * 1000,      // 5 minutes
+  30 * 60 * 1000,     // 30 minutes
+  6 * 60 * 60 * 1000  // 6 hours
+];
 const MAX_ATTEMPTS = 3;
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
@@ -19,14 +23,19 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   useEffect(() => {
     const lockoutData = localStorage.getItem('adminLockout');
     if (lockoutData) {
-      const { lockedUntil, attempts } = JSON.parse(lockoutData);
+      const { lockedUntil, attempts, lockoutLevel } = JSON.parse(lockoutData);
       const now = Date.now();
 
       if (lockedUntil > now) {
         setIsLocked(true);
         setRemainingTime(Math.ceil((lockedUntil - now) / 1000));
       } else if (attempts >= MAX_ATTEMPTS) {
-        localStorage.removeItem('adminLockout');
+        const updatedData = {
+          attempts: 0,
+          lockedUntil: 0,
+          lockoutLevel: lockoutLevel || 0
+        };
+        localStorage.setItem('adminLockout', JSON.stringify(updatedData));
       }
     }
   }, []);
@@ -37,7 +46,15 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         setRemainingTime((prev) => {
           if (prev <= 1) {
             setIsLocked(false);
-            localStorage.removeItem('adminLockout');
+            const lockoutData = localStorage.getItem('adminLockout');
+            if (lockoutData) {
+              const data = JSON.parse(lockoutData);
+              localStorage.setItem('adminLockout', JSON.stringify({
+                attempts: 0,
+                lockedUntil: 0,
+                lockoutLevel: data.lockoutLevel || 0
+              }));
+            }
             setError('');
             return 0;
           }
@@ -68,25 +85,39 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     } else {
       const lockoutData = localStorage.getItem('adminLockout');
       let attempts = 1;
+      let currentLockoutLevel = 0;
 
       if (lockoutData) {
         const data = JSON.parse(lockoutData);
         attempts = data.attempts + 1;
+        currentLockoutLevel = data.lockoutLevel || 0;
       }
 
       if (attempts >= MAX_ATTEMPTS) {
-        const lockedUntil = Date.now() + LOCKOUT_DURATION;
+        const nextLockoutLevel = Math.min(currentLockoutLevel, LOCKOUT_DURATIONS.length - 1);
+        const lockoutDuration = LOCKOUT_DURATIONS[nextLockoutLevel];
+        const lockedUntil = Date.now() + lockoutDuration;
+
         localStorage.setItem('adminLockout', JSON.stringify({
           attempts,
-          lockedUntil
+          lockedUntil,
+          lockoutLevel: nextLockoutLevel + 1
         }));
+
         setIsLocked(true);
-        setRemainingTime(LOCKOUT_DURATION / 1000);
-        setError('Zu viele Fehlversuche. Login gesperrt für 5 Minuten.');
+        setRemainingTime(lockoutDuration / 1000);
+
+        const lockoutMessages = [
+          'Zu viele Fehlversuche. Login gesperrt für 5 Minuten.',
+          'Zu viele Fehlversuche. Login gesperrt für 30 Minuten.',
+          'Zu viele Fehlversuche. Login gesperrt für 6 Stunden.'
+        ];
+        setError(lockoutMessages[nextLockoutLevel]);
       } else {
         localStorage.setItem('adminLockout', JSON.stringify({
           attempts,
-          lockedUntil: 0
+          lockedUntil: 0,
+          lockoutLevel: currentLockoutLevel
         }));
         setError(`Falsches Passwort. ${MAX_ATTEMPTS - attempts} Versuche übrig.`);
       }
@@ -98,8 +129,13 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   };
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
