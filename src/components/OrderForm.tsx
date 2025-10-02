@@ -659,14 +659,33 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
 
       // Save to Firebase
       try {
-        await addDoc(collection(db, 'orders'), {
-          customer_name: orderData.name,
+        // Prepare clean order data for Firebase (no undefined values)
+        const firebaseOrderData = {
+          orderType: orderData.orderType,
+          deliveryZone: orderData.deliveryZone || null,
+          deliveryTime: orderData.deliveryTime,
+          specificTime: orderData.specificTime || null,
+          name: orderData.name,
           phone: orderData.phone,
-          address: orderData.orderType === 'delivery'
-            ? `${orderData.street} ${orderData.houseNumber}, ${orderData.postcode}`
+          street: orderData.street || null,
+          houseNumber: orderData.houseNumber || null,
+          postcode: orderData.postcode || null,
+          note: orderData.note || null,
+          orderItems: orderData.orderItems,
+          subtotal: orderData.subtotal,
+          deliveryFee: orderData.deliveryFee,
+          total: orderData.total,
+          timestamp: orderData.timestamp
+        };
+
+        await addDoc(collection(db, 'orders'), {
+          customer_name: firebaseOrderData.name,
+          phone: firebaseOrderData.phone,
+          address: firebaseOrderData.orderType === 'delivery'
+            ? `${firebaseOrderData.street} ${firebaseOrderData.houseNumber}, ${firebaseOrderData.postcode}`
             : 'Abholung',
-          items: orderData,
-          total_amount: orderData.total,
+          items: firebaseOrderData,
+          total_amount: firebaseOrderData.total,
           status: 'pending',
           created_at: new Date()
         });
