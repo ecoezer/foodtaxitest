@@ -612,15 +612,80 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
     }
   }, [onClearCart]);
 
+  const getDeviceInfo = useCallback(() => {
+    const ua = navigator.userAgent;
+    let browser = 'Unknown';
+    let browserVersion = '';
+    let os = 'Unknown';
+    let deviceType: 'mobile' | 'tablet' | 'desktop' = 'desktop';
+
+    // Detect browser
+    if (ua.includes('Firefox/')) {
+      browser = 'Firefox';
+      browserVersion = ua.match(/Firefox\/(\d+\.\d+)/)?.[1] || '';
+    } else if (ua.includes('Chrome/') && !ua.includes('Edg')) {
+      browser = 'Chrome';
+      browserVersion = ua.match(/Chrome\/(\d+\.\d+)/)?.[1] || '';
+    } else if (ua.includes('Safari/') && !ua.includes('Chrome')) {
+      browser = 'Safari';
+      browserVersion = ua.match(/Version\/(\d+\.\d+)/)?.[1] || '';
+    } else if (ua.includes('Edg/')) {
+      browser = 'Edge';
+      browserVersion = ua.match(/Edg\/(\d+\.\d+)/)?.[1] || '';
+    } else if (ua.includes('Opera') || ua.includes('OPR/')) {
+      browser = 'Opera';
+      browserVersion = ua.match(/(?:Opera|OPR)\/(\d+\.\d+)/)?.[1] || '';
+    }
+
+    // Detect OS
+    if (ua.includes('Windows')) {
+      os = 'Windows';
+    } else if (ua.includes('Mac OS X')) {
+      os = 'macOS';
+    } else if (ua.includes('Linux')) {
+      os = 'Linux';
+    } else if (ua.includes('Android')) {
+      os = 'Android';
+    } else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) {
+      os = 'iOS';
+    }
+
+    // Detect device type
+    if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+      deviceType = 'mobile';
+    } else if (/iPad|Tablet/i.test(ua)) {
+      deviceType = 'tablet';
+    }
+
+    return {
+      browser,
+      browserVersion,
+      os,
+      deviceType,
+      userAgent: ua
+    };
+  }, []);
+
+  const getIPAddress = useCallback(async () => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      console.error('Failed to fetch IP address:', error);
+      return 'Unknown';
+    }
+  }, []);
+
   const onSubmit = useCallback(async (data: OrderFormData) => {
     if (isSubmitting) return;
-    
+
     // Prevent double submission on mobile
     const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
     if (submitButton) {
       submitButton.disabled = true;
     }
-    
+
     // Check minimum order requirement for delivery
     if (data.orderType === 'delivery' && !minOrderMet) {
       if (submitButton) {
@@ -628,16 +693,20 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
       }
       return; // Don't submit if minimum order not met
     }
-    
+
     setIsSubmitting(true);
-    
+
     console.log('Order submission started on mobile:', {
       isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
       orderData: data,
       orderItems: orderItems.length
     });
-    
+
     try {
+      // Capture IP address and device info
+      const ipAddress = await getIPAddress();
+      const deviceInfo = getDeviceInfo();
+
       // Prepare order data
       const orderData = {
         orderType: data.orderType,
@@ -654,7 +723,9 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         total: total,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ip_address: ipAddress,
+        device_info: deviceInfo
       };
 
       // Save to Firebase
@@ -673,21 +744,25 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
 
         // Prepare clean order data for Firebase (no undefined values)
         const firebaseOrderData = {
-          orderType: orderData.orderType,
-          deliveryZone: orderData.deliveryZone || null,
-          deliveryTime: orderData.deliveryTime,
-          specificTime: orderData.specificTime || null,
-          name: orderData.name,
-          phone: orderData.phone,
-          street: orderData.street || null,
-          houseNumber: orderData.houseNumber || null,
-          postcode: orderData.postcode || null,
-          note: orderData.note || null,
-          orderItems: cleanedOrderItems,
-          subtotal: orderData.subtotal,
-          deliveryFee: orderData.deliveryFee,
-          total: orderData.total,
-          timestamp: orderData.timestamp
+          items: {
+            orderType: orderData.orderType,
+            deliveryZone: orderData.deliveryZone || null,
+            deliveryTime: orderData.deliveryTime,
+            specificTime: orderData.specificTime || null,
+            name: orderData.name,
+            phone: orderData.phone,
+            street: orderData.street || null,
+            houseNumber: orderData.houseNumber || null,
+            postcode: orderData.postcode || null,
+            note: orderData.note || null,
+            orderItems: cleanedOrderItems,
+            subtotal: orderData.subtotal,
+            deliveryFee: orderData.deliveryFee,
+            total: orderData.total
+          },
+          created_at: new Date(),
+          ip_address: orderData.ip_address,
+          device_info: orderData.device_info
         };
 
         await addDoc(collection(db, 'orders'), firebaseOrderData);
