@@ -11,9 +11,21 @@ import {
   Trash2,
   AlertTriangle,
   Package,
-  CheckCircle
+  CheckCircle,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Globe
 } from 'lucide-react';
 import { OrderItem } from '../types';
+
+interface DeviceInfo {
+  browser: string;
+  browserVersion: string;
+  os: string;
+  deviceType: 'mobile' | 'tablet' | 'desktop';
+  userAgent: string;
+}
 
 interface Order {
   id: string;
@@ -32,6 +44,8 @@ interface Order {
   deliveryFee: number;
   total: number;
   timestamp: number;
+  ip_address?: string;
+  device_info?: DeviceInfo;
 }
 
 interface OrderHistoryProps {
@@ -53,7 +67,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onLogout }) => {
           return {
             id: doc.id,
             ...data.items,
-            timestamp: data.created_at?.toMillis() || Date.now()
+            timestamp: data.created_at?.toMillis() || Date.now(),
+            ip_address: data.ip_address,
+            device_info: data.device_info
           };
         });
         setOrders(ordersArray);
@@ -358,6 +374,35 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onLogout }) => {
                       <p className="text-sm text-yellow-800">{order.note}</p>
                     </div>
                   )}
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {order.ip_address && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <p className="text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                          <Globe className="w-3 h-3" />
+                          IP-Adresse:
+                        </p>
+                        <p className="text-sm text-gray-900 font-mono">{order.ip_address}</p>
+                      </div>
+                    )}
+
+                    {order.device_info && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <p className="text-xs font-medium text-gray-700 mb-1 flex items-center gap-1">
+                          {order.device_info.deviceType === 'mobile' && <Smartphone className="w-3 h-3" />}
+                          {order.device_info.deviceType === 'tablet' && <Tablet className="w-3 h-3" />}
+                          {order.device_info.deviceType === 'desktop' && <Monitor className="w-3 h-3" />}
+                          Gerät:
+                        </p>
+                        <p className="text-sm text-gray-900">
+                          {order.device_info.browser} {order.device_info.browserVersion}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {order.device_info.os} • {order.device_info.deviceType === 'mobile' ? 'Mobil' : order.device_info.deviceType === 'tablet' ? 'Tablet' : 'Desktop'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

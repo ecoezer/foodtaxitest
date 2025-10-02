@@ -7,6 +7,7 @@ import { Phone, ShoppingCart, X, Minus, Plus, Clock, MapPin, User, MessageSquare
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { PizzaSize } from '../types';
+import { getDeviceInfo } from '../utils/deviceInfo';
 
 // Types
 interface OrderItem {
@@ -690,7 +691,12 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
           timestamp: orderData.timestamp
         };
 
-        await addDoc(collection(db, 'orders'), {
+        const deviceInfo = getDeviceInfo();
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        const orderPayload = {
           customer_name: firebaseOrderData.name,
           phone: firebaseOrderData.phone,
           address: firebaseOrderData.orderType === 'delivery'
@@ -699,10 +705,28 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
           items: firebaseOrderData,
           total_amount: firebaseOrderData.total,
           status: 'pending',
+          device_info: deviceInfo
+        };
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/capture-order-with-ip`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderPayload)
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to submit order');
+        }
+
+        await addDoc(collection(db, 'orders'), {
+          ...orderPayload,
           created_at: new Date()
         });
 
-        console.log('Order saved to Firebase successfully');
+        console.log('Order saved successfully');
       } catch (firebaseError) {
         console.error('Failed to save order to Firebase:', firebaseError);
         alert('Es gab ein Problem beim Speichern der Bestellung. Bitte versuchen Sie es erneut.');
