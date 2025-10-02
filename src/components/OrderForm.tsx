@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AsYouType } from 'libphonenumber-js';
 import { Phone, ShoppingCart, X, Minus, Plus, Clock, MapPin, User, MessageSquare, AlertTriangle, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
-import { ref, push } from 'firebase/database';
-import { database } from '../config/firebase';
+import { supabase } from '../lib/supabase';
 import { PizzaSize } from '../types';
 
 // Types
@@ -657,13 +656,25 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
         timestamp: Date.now()
       };
 
-      // Save to Firebase
+      // Save to Supabase
       try {
-        const ordersRef = ref(database, 'orders');
-        await push(ordersRef, orderData);
-        console.log('Order saved to Firebase successfully');
-      } catch (firebaseError) {
-        console.error('Failed to save order to Firebase:', firebaseError);
+        const { error } = await supabase
+          .from('orders')
+          .insert({
+            customer_name: orderData.name,
+            phone: orderData.phone,
+            address: orderData.orderType === 'delivery'
+              ? `${orderData.street} ${orderData.houseNumber}, ${orderData.postcode}`
+              : 'Abholung',
+            items: orderData,
+            total_amount: orderData.total,
+            status: 'pending'
+          });
+
+        if (error) throw error;
+        console.log('Order saved to Supabase successfully');
+      } catch (supabaseError) {
+        console.error('Failed to save order to Supabase:', supabaseError);
         alert('Es gab ein Problem beim Speichern der Bestellung. Bitte versuchen Sie es erneut.');
         setIsSubmitting(false);
         if (submitButton) {

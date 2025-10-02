@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ref, onValue, off } from 'firebase/database';
-import { database } from '../config/firebase';
+import { supabase } from '../lib/supabase';
 import {
   Clock,
   MapPin,
@@ -44,27 +43,48 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onLogout }) => {
   const [filter, setFilter] = useState<'all' | 'today' | 'week'>('all');
 
   useEffect(() => {
-    const ordersRef = ref(database, 'orders');
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-    const handleData = (snapshot: any) => {
-      const data = snapshot.val();
-      if (data) {
-        const ordersArray = Object.entries(data).map(([id, order]: [string, any]) => ({
-          id,
-          ...order
-        }));
-        ordersArray.sort((a, b) => b.timestamp - a.timestamp);
-        setOrders(ordersArray);
-      } else {
+        if (error) throw error;
+
+        if (data) {
+          const ordersArray = data.map((order: any) => ({
+            id: order.id,
+            ...order.items,
+            timestamp: new Date(order.created_at).getTime()
+          }));
+          setOrders(ordersArray);
+        } else {
+          setOrders([]);
+        }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
         setOrders([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    onValue(ordersRef, handleData);
+    fetchOrders();
+
+    const channel = supabase
+      .channel('orders_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
 
     return () => {
-      off(ordersRef, 'value', handleData);
+      supabase.removeChannel(channel);
     };
   }, []);
 
