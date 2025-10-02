@@ -197,23 +197,23 @@ const Header: React.FC = memo(() => {
         {/* Special Day Offers */}
         <div className='mb-6 text-center space-y-2'>
           {/* New Special Offers */}
-          <div className='bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 rounded-lg p-4 shadow-sm'>
-            <h3 className='text-lg font-bold text-green-800 mb-3'>🎯 Jeden Tag von 12 bis 14 Uhr – unser Schüler-Deal! nur zum Abholen! </h3>
-            <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
-              <div className='bg-white/80 rounded-lg p-3 border border-green-200'>
-                <div className='font-bold text-green-700 text-sm mb-1'>ANGEBOT 1</div>
-                <div className='text-sm text-gray-800 mb-2'>Pizza (26cm) Margherita oder Salami</div>
-                <div className='text-xl font-bold text-green-600'>6€</div>
+          <div className='bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 rounded-lg p-2 shadow-sm'>
+            <h3 className='text-base font-bold text-green-800 mb-2'>🎯 Jeden Tag von 12 bis 14 Uhr – unser Schüler-Deal! nur zum Abholen! </h3>
+            <div className='grid grid-cols-1 sm:grid-cols-3 gap-2'>
+              <div className='bg-white/80 rounded-lg p-2 border border-green-200'>
+                <div className='font-bold text-green-700 text-xs mb-0.5'>ANGEBOT 1</div>
+                <div className='text-xs text-gray-800 mb-1'>Pizza (26cm) Margherita oder Salami</div>
+                <div className='text-lg font-bold text-green-600'>6€</div>
               </div>
-              <div className='bg-white/80 rounded-lg p-3 border border-green-200'>
-                <div className='font-bold text-green-700 text-sm mb-1'>ANGEBOT 2</div>
-                <div className='text-sm text-gray-800 mb-2'>Chicken Burger mit Pommes + Mayo oder Ketchup</div>
-                <div className='text-xl font-bold text-green-600'>5€</div>
+              <div className='bg-white/80 rounded-lg p-2 border border-green-200'>
+                <div className='font-bold text-green-700 text-xs mb-0.5'>ANGEBOT 2</div>
+                <div className='text-xs text-gray-800 mb-1'>Chicken Burger mit Pommes + Mayo oder Ketchup</div>
+                <div className='text-lg font-bold text-green-600'>5€</div>
               </div>
-              <div className='bg-white/80 rounded-lg p-3 border border-green-200'>
-                <div className='font-bold text-green-700 text-sm mb-1'>ANGEBOT 3</div>
-                <div className='text-sm text-gray-800 mb-2'>Burger mit Pommes + Mayo oder Ketchup</div>
-                <div className='text-xl font-bold text-green-600'>5€</div>
+              <div className='bg-white/80 rounded-lg p-2 border border-green-200'>
+                <div className='font-bold text-green-700 text-xs mb-0.5'>ANGEBOT 3</div>
+                <div className='text-xs text-gray-800 mb-1'>Burger mit Pommes + Mayo oder Ketchup</div>
+                <div className='text-lg font-bold text-green-600'>5€</div>
               </div>
             </div>
           </div>
