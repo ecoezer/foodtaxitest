@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AsYouType } from 'libphonenumber-js';
 import { Phone, ShoppingCart, X, Minus, Plus, Clock, MapPin, User, MessageSquare, AlertTriangle, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import { PizzaSize } from '../types';
 
 // Types
@@ -656,25 +657,23 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
         timestamp: Date.now()
       };
 
-      // Save to Supabase
+      // Save to Firebase
       try {
-        const { error } = await supabase
-          .from('orders')
-          .insert({
-            customer_name: orderData.name,
-            phone: orderData.phone,
-            address: orderData.orderType === 'delivery'
-              ? `${orderData.street} ${orderData.houseNumber}, ${orderData.postcode}`
-              : 'Abholung',
-            items: orderData,
-            total_amount: orderData.total,
-            status: 'pending'
-          });
+        await addDoc(collection(db, 'orders'), {
+          customer_name: orderData.name,
+          phone: orderData.phone,
+          address: orderData.orderType === 'delivery'
+            ? `${orderData.street} ${orderData.houseNumber}, ${orderData.postcode}`
+            : 'Abholung',
+          items: orderData,
+          total_amount: orderData.total,
+          status: 'pending',
+          created_at: new Date()
+        });
 
-        if (error) throw error;
-        console.log('Order saved to Supabase successfully');
-      } catch (supabaseError) {
-        console.error('Failed to save order to Supabase:', supabaseError);
+        console.log('Order saved to Firebase successfully');
+      } catch (firebaseError) {
+        console.error('Failed to save order to Firebase:', firebaseError);
         alert('Es gab ein Problem beim Speichern der Bestellung. Bitte versuchen Sie es erneut.');
         setIsSubmitting(false);
         if (submitButton) {

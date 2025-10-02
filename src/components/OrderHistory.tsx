@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Clock,
   MapPin,
@@ -43,49 +44,32 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ onLogout }) => {
   const [filter, setFilter] = useState<'all' | 'today' | 'week'>('all');
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const q = query(collection(db, 'orders'), orderBy('created_at', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (data) {
-          const ordersArray = data.map((order: any) => ({
-            id: order.id,
-            ...order.items,
-            timestamp: new Date(order.created_at).getTime()
-          }));
-          setOrders(ordersArray);
-        } else {
-          setOrders([]);
-        }
+        const ordersArray = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data.items,
+            timestamp: data.created_at?.toMillis() || Date.now()
+          };
+        });
+        setOrders(ordersArray);
       } catch (error) {
         console.error('Error fetching orders:', error);
         setOrders([]);
       } finally {
         setLoading(false);
       }
-    };
+    }, (error) => {
+      console.error('Error listening to orders:', error);
+      setOrders([]);
+      setLoading(false);
+    });
 
-    fetchOrders();
-
-    const channel = supabase
-      .channel('orders_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => {
-          fetchOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => unsubscribe();
   }, []);
 
   const getFilteredOrders = () => {
