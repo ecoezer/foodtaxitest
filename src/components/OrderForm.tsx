@@ -659,6 +659,18 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
 
       // Save to Firebase
       try {
+        // Clean orderItems to remove undefined values
+        const cleanedOrderItems = orderData.orderItems.map(item => ({
+          menuItem: item.menuItem,
+          quantity: item.quantity,
+          selectedSize: item.selectedSize || null,
+          selectedIngredients: item.selectedIngredients || null,
+          selectedExtras: item.selectedExtras || null,
+          selectedPastaType: item.selectedPastaType || null,
+          selectedSauce: item.selectedSauce || null,
+          selectedSpecialRequest: item.selectedSpecialRequest || null
+        }));
+
         // Prepare clean order data for Firebase (no undefined values)
         const firebaseOrderData = {
           orderType: orderData.orderType,
@@ -671,7 +683,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
           houseNumber: orderData.houseNumber || null,
           postcode: orderData.postcode || null,
           note: orderData.note || null,
-          orderItems: orderData.orderItems,
+          orderItems: cleanedOrderItems,
           subtotal: orderData.subtotal,
           deliveryFee: orderData.deliveryFee,
           total: orderData.total,
