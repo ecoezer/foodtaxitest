@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AsYouType } from 'libphonenumber-js';
 import { Phone, ShoppingCart, X, Minus, Plus, Clock, MapPin, User, MessageSquare, AlertTriangle, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { ref, push } from 'firebase/database';
+import { database } from '../config/firebase';
 import { PizzaSize } from '../types';
 
 // Types
@@ -636,7 +638,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
     });
     
     try {
-      // Prepare order data for email
+      // Prepare order data
       const orderData = {
         orderType: data.orderType,
         deliveryZone: data.deliveryZone,
@@ -651,33 +653,23 @@ const OrderForm: React.FC<OrderFormProps> = ({ orderItems, onRemoveItem, onUpdat
         orderItems: orderItems,
         subtotal: subtotal,
         deliveryFee: deliveryFee,
-        total: total
+        total: total,
+        timestamp: Date.now()
       };
 
-      // Send email notification (don't block WhatsApp if this fails)
+      // Save to Firebase
       try {
-        // Use environment variables for Supabase function URL
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const emailApiUrl = supabaseUrl 
-          ? `${supabaseUrl}/functions/v1/send-order-email`
-          : '/api/send-order-email'; // Fallback for local development
-        
-        const emailResponse = await fetch(emailApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify(orderData),
-        });
-
-        if (emailResponse.ok) {
-          console.log('Order email sent successfully');
-        } else {
-          console.warn('Failed to send order email, but continuing with WhatsApp');
+        const ordersRef = ref(database, 'orders');
+        await push(ordersRef, orderData);
+        console.log('Order saved to Firebase successfully');
+      } catch (firebaseError) {
+        console.error('Failed to save order to Firebase:', firebaseError);
+        alert('Es gab ein Problem beim Speichern der Bestellung. Bitte versuchen Sie es erneut.');
+        setIsSubmitting(false);
+        if (submitButton) {
+          submitButton.disabled = false;
         }
-      } catch (emailError) {
-        console.warn('Email service error, but continuing with WhatsApp:', emailError);
+        return;
       }
 
       const orderDetails = orderItems

@@ -4,6 +4,8 @@ import MenuSection from './components/MenuSection';
 import Footer from './components/Footer';
 import Navigation from './components/Navigation';
 import OrderForm from './components/OrderForm';
+import AdminLogin from './components/AdminLogin';
+import OrderHistory from './components/OrderHistory';
 import {
   salads,
   dips,
@@ -71,6 +73,19 @@ const debugLog = (message, data) => {
 };
 
 function App() {
+  // =================== ADMIN STATE ===================
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(
+    localStorage.getItem('adminAuth') === 'true'
+  );
+
+  // Check URL for admin route
+  useEffect(() => {
+    if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
+      setShowAdmin(true);
+    }
+  }, []);
+
   // =================== STORE STATE ===================
   const items = useCartStore(state => state.items);
   const addItem = useCartStore(state => state.addItem);
@@ -474,7 +489,27 @@ function App() {
     );
   }, [memoizedAddItem]);
 
+  // =================== ADMIN HANDLERS ===================
+  const handleAdminLogin = () => {
+    setIsAdminAuthenticated(true);
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('adminAuth');
+    setIsAdminAuthenticated(false);
+    setShowAdmin(false);
+    window.location.hash = '';
+  };
+
   // =================== MAIN RENDER ===================
+  // Show admin panel if in admin mode
+  if (showAdmin) {
+    if (!isAdminAuthenticated) {
+      return <AdminLogin onLogin={handleAdminLogin} />;
+    }
+    return <OrderHistory onLogout={handleAdminLogout} />;
+  }
+
   return (
     <div className='min-h-dvh bg-gray-50'>
       <div className='fixed top-0 left-0 right-0 z-50'>
